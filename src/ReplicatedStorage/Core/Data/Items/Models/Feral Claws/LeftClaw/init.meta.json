@@ -1,0 +1,18 @@
+{
+  "className": "Part",
+  "properties": {
+    "BackSurface": "Weld",
+    "BottomSurface": "Weld",
+    "CFrame": [37.734, 1.4466, -7.6134, 1, 0, 0, 0, 0, 1, 0, -1, 0],
+    "CanCollide": false,
+    "CanQuery": false,
+    "Color": [70, 196, 61],
+    "FormFactor": "Custom",
+    "FrontSurface": "Weld",
+    "LeftSurface": "Weld",
+    "Material": "Neon",
+    "RightSurface": "Weld",
+    "Size": [2.0665, 0.8266, 2.8931],
+    "TopSurface": "Weld"
+  }
+}

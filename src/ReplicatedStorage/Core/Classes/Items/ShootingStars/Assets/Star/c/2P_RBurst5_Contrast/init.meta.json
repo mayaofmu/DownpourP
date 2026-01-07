@@ -1,0 +1,80 @@
+{
+  "className": "ParticleEmitter",
+  "properties": {
+    "Attributes": {
+      "EmitCount": 16,
+      "EmitDuration": 0
+    },
+    "Brightness": 6,
+    "Color": [{
+        "time": 0.0,
+        "color": [1.0, 0.8627, 0.1647]
+      }, {
+        "time": 1.0,
+        "color": [1.0, 0.8627, 0.1647]
+      }],
+    "Drag": 2,
+    "EmissionDirection": "Back",
+    "FlipbookFramerate": [1.0938, 1.0938],
+    "FlipbookLayout": "Grid4x4",
+    "FlipbookMode": "OneShot",
+    "Lifetime": [0.5, 1],
+    "LightEmission": 0.3,
+    "LockedToPart": true,
+    "Rate": 12,
+    "RotSpeed": [1, 1],
+    "Rotation": [-360, 360],
+    "Shape": "Disc",
+    "ShapePartial": 4,
+    "Size": [{
+        "time": 0.0,
+        "value": 1.5928,
+        "envelope": 0.0
+      }, {
+        "time": 0.3137,
+        "value": 4.2943,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 7.2853,
+        "envelope": 0.0
+      }],
+    "Speed": [0, 0],
+    "SpreadAngle": [333, 333],
+    "Texture": "rbxassetid://13800461961",
+    "Transparency": [{
+        "time": 0.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.0349,
+        "value": 0.6523,
+        "envelope": 0.0
+      }, {
+        "time": 0.0909,
+        "value": 0.4023,
+        "envelope": 0.0
+      }, {
+        "time": 0.1697,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.4072,
+        "value": 0.5018,
+        "envelope": 0.0
+      }, {
+        "time": 0.5252,
+        "value": 0.7518,
+        "envelope": 0.0
+      }, {
+        "time": 0.7672,
+        "value": 0.8451,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }],
+    "ZOffset": 1
+  }
+}

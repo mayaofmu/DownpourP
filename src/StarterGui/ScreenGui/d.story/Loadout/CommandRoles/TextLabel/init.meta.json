@@ -1,0 +1,25 @@
+{
+  "className": "TextLabel",
+  "properties": {
+    "AnchorPoint": [0.5, 0.5],
+    "BackgroundColor3": [1, 1, 1],
+    "BackgroundTransparency": 1,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "FontFace": {
+      "family": "rbxassetid://16658237174",
+      "weight": "Bold",
+      "style": "Normal",
+      "cachedFaceId": null
+    },
+    "Position": [[0.2053, 0.0], [-0.0853, 0.0]],
+    "Size": [[0.0, 200.0], [0.0, 26.0]],
+    "Tags": ["blob-ui-object"],
+    "Text": "Command Roles",
+    "TextColor3": [1, 1, 1],
+    "TextScaled": true,
+    "TextSize": 14,
+    "TextWrapped": true,
+    "TextXAlignment": "Left"
+  }
+}

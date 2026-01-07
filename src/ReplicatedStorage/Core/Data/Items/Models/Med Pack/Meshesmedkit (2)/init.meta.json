@@ -1,0 +1,13 @@
+{
+  "className": "MeshPart",
+  "properties": {
+    "CFrame": [46.2287, 1.1919, 9.9427, 0.4695, 0, 0.8829, 0, 1, 0, -0.8829, 0, 0.4695],
+    "CanCollide": false,
+    "InitialSize": [3.6, 3.4, 1.8829],
+    "MeshContent": "rbxassetid://10347598083",
+    "RenderFidelity": "Precise",
+    "Size": [2.3606, 2.2294, 1.2347],
+    "TextureContent": "rbxassetid://10347598132"
+  },
+  "originalName": "Meshes/medkit (2)"
+}

@@ -1,0 +1,25 @@
+{
+  "className": "TextLabel",
+  "properties": {
+    "AnchorPoint": [0.5, 0.5],
+    "BackgroundColor3": [1, 1, 1],
+    "BackgroundTransparency": 1,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "FontFace": {
+      "family": "rbxasset://fonts/families/TitilliumWeb.json",
+      "weight": "Bold",
+      "style": "Normal",
+      "cachedFaceId": null
+    },
+    "Position": [[0.2353, 0.0], [0.491, 0.0]],
+    "Size": [[0.4144, 0.0], [0.8026, 0.0]],
+    "Tags": ["blob-ui-object"],
+    "Text": "Automatic Rifleman",
+    "TextColor3": [1, 1, 1],
+    "TextScaled": true,
+    "TextSize": 14,
+    "TextWrapped": true,
+    "TextXAlignment": "Left"
+  }
+}

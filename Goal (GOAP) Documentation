@@ -1,0 +1,2889 @@
+# Goal GOAP System - API Reference
+
+Complete API documentation for the Goal GOAP (Goal-Oriented Action Planning) and HTN (Hierarchical Task Network) system.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Common Mistakes](#common-mistakes)
+- [State](#state)
+- [Goal](#goal)
+- [Action](#action)
+- [ActionSequence](#actionsequence)
+- [Planner](#planner)
+- [Logger](#logger)
+- [Utilities](#utilities)
+- [Consideration (Utility AI)](#consideration-utility-ai)
+- [Memory](#memory)
+- [Blackboard](#blackboard)
+- [Perception](#perception)
+- [Personality](#personality)
+- [Navigation](#navigation)
+- [NavigationGrid](#navigationgrid)
+- [PathfindingAdapter](#pathfindingadapter)
+- [SpatialGrid](#spatialgrid)
+- [HTN Task](#htn-task)
+- [HTN Method](#htn-method)
+- [HTN Domain](#htn-domain)
+- [HTN Planner](#htn-planner)
+- [Actor Modules](#actor-modules)
+- [Helper Functions](#helper-functions)
+- [Example Files](#example-files)
+
+---
+
+## Overview
+
+```lua
+local Goal = require(path.to.goal)
+
+-- Core GOAP Modules (src/)
+Goal.State          -- World state management
+Goal.Goal           -- Goal definitions
+Goal.Action         -- Action definitions
+Goal.ActionSequence -- Action chains
+Goal.Planner        -- A* planning
+Goal.Logger         -- Debug logging
+Goal.Utilities      -- Helper utilities
+
+-- AI Modules (src/AI/) - Smart Decision Making
+Goal.Consideration  -- Utility curves for nuanced decisions
+Goal.Memory         -- Short-term and long-term memory
+Goal.Blackboard     -- Shared knowledge for NPC coordination
+Goal.Perception     -- Vision, hearing, and awareness
+Goal.Personality    -- Trait-based behavior variation
+-- Also accessible via: Goal.AI.Consideration, Goal.AI.Memory, etc.
+
+-- Navigation Modules (src/Navigation/) - Tactical Pathfinding
+Goal.Navigation         -- A* pathfinding, cover, flanking, flee routes
+Goal.NavigationGrid     -- Spatial grid representation
+Goal.PathfindingAdapter -- Roblox PathfindingService bridge
+Goal.SpatialGrid        -- O(1) proximity queries for entities
+-- Also accessible via: Goal.Navigation.Navigation, Goal.Navigation.Grid, etc.
+
+-- HTN Modules (src/HTN/) - Hierarchical Task Networks
+Goal.Task           -- Primitive and compound task definitions
+Goal.Method         -- Task decomposition methods
+Goal.HTNDomain      -- Domain registry (tasks + methods)
+Goal.HTNPlanner     -- HTN planning with backtracking
+-- Also accessible via: Goal.HTN.Task, Goal.HTN.Method, etc.
+
+-- Actor Modules (src/Actor/) - Parallel Execution (lazy-loaded)
+Goal.SharedBlackboard  -- Cross-actor blackboard communication
+Goal.ActorPool         -- Actor management and job distribution
+Goal.NPCScheduler      -- Batch NPC updates across frames
+-- Also accessible via: Goal.Actor.SharedBlackboard, Goal.Actor.ActorPool, etc.
+
+-- Version
+Goal.VERSION        -- "1.5.0"
+```
+
+---
+
+## Quick Start
+
+Here's a minimal working example to get started:
+
+```lua
+local Goal = require(path.to.Goal)
+
+-- 1. Create a planner and register actions
+local planner = Goal.Planner.new()
+
+planner:registerAction(Goal.Action.new({
+    name = "GatherWood",
+    cost = 2,
+    preconditions = { nearForest = true },
+    effects = { hasWood = true },
+    executeFn = function()
+        print("Gathering wood...")
+        return true
+    end,
+}))
+
+planner:registerAction(Goal.Action.new({
+    name = "BuildFire",
+    cost = 1,
+    preconditions = { hasWood = true },
+    effects = { hasFire = true },
+    executeFn = function()
+        print("Building fire...")
+        return true
+    end,
+}))
+
+-- 2. Define a goal
+local campfireGoal = Goal.Goal.new({
+    name = "MakeCampfire",
+    desiredState = { hasFire = true },
+    priority = 10,
+})
+
+-- 3. Create world state
+local worldState = Goal.State.new({
+    nearForest = true,
+    hasWood = false,
+    hasFire = false,
+})
+
+-- 4. Plan and execute
+local plan = planner:plan(worldState, campfireGoal)
+
+if plan.success then
+    print("Plan found with", #plan.actions, "actions:")
+    for i, action in ipairs(plan.actions) do
+        print(i .. ". " .. action:getName())
+        action:execute()
+    end
+end
+```
+
+---
+
+## Common Mistakes
+
+Avoid these common API mistakes:
+
+### 1. Using String Instead of Config Table
+
+```lua
+-- WRONG: Passing a string
+local goal = Goal.Goal.new("MyGoal")
+
+-- CORRECT: Pass a config table
+local goal = Goal.Goal.new({
+    name = "MyGoal",
+    desiredState = { isComplete = true },
+    priority = 10,
+})
+```
+
+### 2. Using Chained Methods (They Don't Exist)
+
+```lua
+-- WRONG: Chained builder methods don't exist
+local goal = Goal.Goal.new({ name = "MyGoal" })
+    :withValidation(function(state) return true end)
+    :withPriority(function(state) return 10 end)
+
+-- CORRECT: Use config properties
+local goal = Goal.Goal.new({
+    name = "MyGoal",
+    desiredState = { isComplete = true },
+    isValidFn = function(state) return true end,
+    priorityFn = function(state) return 10 end,
+})
+```
+
+### 3. Using Wrong Method for Dynamic Priority
+
+```lua
+-- WRONG: getPriority() doesn't take a parameter
+local priority = goal:getPriority(worldState)
+
+-- CORRECT: Use calculateRelevance() for dynamic priority
+local priority = goal:calculateRelevance(worldState)
+
+-- OR: getPriority() for base priority (no parameter)
+local basePriority = goal:getPriority()
+```
+
+### 4. Using Wrong Planner Method
+
+```lua
+-- WRONG: addAction doesn't exist
+planner:addAction(myAction)
+
+-- CORRECT: Use registerAction
+planner:registerAction(myAction)
+
+-- OR register multiple at once
+planner:registerActions({ action1, action2, action3 })
+```
+
+### 5. Using Wrong Execute Signature
+
+```lua
+-- WRONG: execute() doesn't take worldState
+action:execute(worldState)
+
+-- CORRECT: execute() takes optional agent and context
+action:execute()  -- No parameters
+action:execute(myAgent)  -- With agent
+action:execute(myAgent, { turn = 5 })  -- With agent and context
+```
+
+### 6. Using onExecute Chained Method
+
+```lua
+-- WRONG: onExecute method doesn't exist
+local action = Goal.Action.new({
+    name = "Attack",
+    cost = 1,
+}):onExecute(function() print("Attacking!") return true end)
+
+-- CORRECT: Use executeFn in config
+local action = Goal.Action.new({
+    name = "Attack",
+    cost = 1,
+    executeFn = function()
+        print("Attacking!")
+        return true
+    end,
+})
+```
+
+### API Quick Reference Table
+
+| What You Want | Correct Method |
+|---------------|----------------|
+| Create a goal | `Goal.Goal.new({ name, desiredState, priority, ... })` |
+| Create an action | `Goal.Action.new({ name, cost, preconditions, effects, executeFn, ... })` |
+| Create a planner | `Goal.Planner.new()` or `Goal.Planner.new({ config })` |
+| Register an action | `planner:registerAction(action)` |
+| Get dynamic priority | `goal:calculateRelevance(worldState)` |
+| Get base priority | `goal:getPriority()` |
+| Check if goal is valid | `goal:isValid(worldState)` |
+| Plan for a goal | `planner:plan(worldState, goal)` |
+| Execute an action | `action:execute()` or `action:execute(agent, context)` |
+
+---
+
+## State
+
+Represents and manipulates world state as key-value pairs.
+
+### Constructor
+
+```lua
+State.new(data: {[string]: any}?) -> State
+```
+
+Creates a new State with optional initial data.
+
+```lua
+local state = Goal.State.new({
+    hasAxe = true,
+    health = 100,
+    position = "forest",
+})
+```
+
+### Methods
+
+#### get
+
+```lua
+state:get(key: string) -> any?
+```
+
+Gets a value from the state.
+
+#### set
+
+```lua
+state:set(key: string, value: any)
+```
+
+Sets a value in the state. Only marks dirty if value actually changed.
+
+#### has
+
+```lua
+state:has(key: string) -> boolean
+```
+
+Checks if a key exists in the state.
+
+#### remove
+
+```lua
+state:remove(key: string)
+```
+
+Removes a key from the state.
+
+#### clear
+
+```lua
+state:clear()
+```
+
+Removes all keys from the state.
+
+#### clone
+
+```lua
+state:clone() -> State
+```
+
+Creates a deep copy of the state.
+
+#### merge
+
+```lua
+state:merge(other: State)
+```
+
+Merges another state into this one.
+
+#### satisfies
+
+```lua
+state:satisfies(conditions: State) -> boolean
+```
+
+Checks if this state satisfies all conditions.
+
+#### countUnsatisfied
+
+```lua
+state:countUnsatisfied(conditions: State) -> number
+```
+
+Counts how many conditions are not satisfied.
+
+#### difference
+
+```lua
+state:difference(goalState: State) -> {string}
+```
+
+Gets the keys that differ between this state and a goal state.
+
+#### equals
+
+```lua
+state:equals(other: State) -> boolean
+```
+
+Checks if this state is equal to another state.
+
+#### isSubsetOf
+
+```lua
+state:isSubsetOf(other: State) -> boolean
+```
+
+Checks if all key-value pairs in this state exist in the other.
+
+#### pairs
+
+```lua
+state:pairs() -> iterator
+```
+
+Iterates over all key-value pairs.
+
+#### size
+
+```lua
+state:size() -> number
+```
+
+Returns the number of entries in the state.
+
+#### keys
+
+```lua
+state:keys() -> {string}
+```
+
+Returns all keys in the state as an array.
+
+#### values
+
+```lua
+state:values() -> {StateValue}
+```
+
+Returns all values in the state as an array.
+
+#### getData
+
+```lua
+state:getData() -> {[string]: any}
+```
+
+Gets a copy of the raw data table.
+
+#### Batch Operations
+
+```lua
+state:setMultiple(values: {[string]: any})
+state:getMultiple(keys: {string}) -> {[string]: any}
+state:removeMultiple(keys: {string})
+```
+
+Efficient multi-key operations.
+
+#### Dirty Flag System
+
+```lua
+state:isDirty() -> boolean
+state:markClean()
+state:markDirty()
+```
+
+Track state changes for optimization.
+
+#### Serialization
+
+```lua
+state:serialize() -> SerializedState
+State.deserialize(data: SerializedState) -> State?, string?
+
+state:toJSON() -> string?, string?
+State.fromJSON(json: string) -> State?, string?
+
+State.fromTable(data: {[string]: any}) -> State
+state:toTable() -> {[string]: any}
+```
+
+Serialization for persistence.
+
+---
+
+## Goal
+
+Defines desired world states that agents should achieve.
+
+### Constructor
+
+```lua
+Goal.new(config: GoalConfig) -> Goal
+```
+
+**GoalConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| name | string | required | Unique identifier |
+| desiredState | table | required | State conditions to satisfy |
+| priority | number | 1 | Base priority level |
+| validateFn | function? | nil | Custom completion check |
+| isValidFn | function? | nil | Check if goal is relevant |
+| priorityFn | function? | nil | Dynamic priority calculation |
+| interruptible | boolean | true | Can be interrupted |
+| onInterrupt | function? | nil | Interrupt callback |
+| group | string? | nil | Goal group |
+| tags | {string}? | {} | Tags for filtering |
+| minPriority | number | 0 | Minimum priority threshold |
+
+```lua
+local goal = Goal.Goal.new({
+    name = "DefeatEnemy",
+    desiredState = { enemyDefeated = true },
+    priority = 8,
+    priorityFn = function(state)
+        return state:get("enemyNearby") and 10 or 1
+    end,
+})
+```
+
+### Methods
+
+#### Basic Properties
+
+```lua
+goal:getName() -> string
+goal:getDesiredState() -> State
+goal:getPriority() -> number
+goal:setPriority(priority: number)
+```
+
+#### Validation
+
+```lua
+goal:isValid(worldState: State) -> boolean
+goal:validate(worldState: State) -> boolean
+goal:isSatisfied(worldState: State) -> boolean
+goal:calculateRelevance(worldState: State) -> number
+goal:getDistance(worldState: State) -> number
+```
+
+#### Interrupt Handling
+
+```lua
+goal:canInterrupt() -> boolean
+goal:interrupt(worldState: State) -> boolean
+goal:isActive() -> boolean
+goal:markActive()
+goal:markInactive()
+goal:shouldInterrupt(otherGoal: Goal, worldState: State) -> boolean
+```
+
+#### Grouping & Tags
+
+```lua
+goal:getGroup() -> string?
+goal:setGroup(group: string)
+goal:getTags() -> {string}
+goal:hasTag(tag: string) -> boolean
+goal:addTag(tag: string)
+goal:removeTag(tag: string) -> boolean
+goal:clearTags()
+```
+
+#### Priority Threshold
+
+```lua
+goal:getMinPriority() -> number
+goal:setMinPriority(threshold: number)
+goal:meetsThreshold(worldState: State) -> boolean
+```
+
+#### Debugging
+
+```lua
+goal:debugSummary(worldState: State?) -> string
+```
+
+---
+
+## Action
+
+Defines state transitions with preconditions and effects.
+
+### Constructor
+
+```lua
+Action.new(config: ActionConfig) -> Action
+```
+
+**ActionConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| name | string | required | Unique identifier |
+| cost | number | 1 | Base cost for planning |
+| preconditions | table? | {} | Required state conditions |
+| effects | table? | {} | State changes on completion |
+| validateFn | function? | nil | Runtime validation |
+| executeFn | function? | nil | Execution logic |
+| costFn | function? | nil | Dynamic cost calculation |
+| cooldownTime | number | 0 | Cooldown duration |
+| cooldownMode | string | "seconds" | "seconds" or "turns" |
+| resourceCosts | table? | {} | Resource requirements |
+| interruptible | boolean | true | Can be interrupted |
+| onInterrupt | function? | nil | Interrupt callback |
+| group | string? | nil | Action group |
+| tags | {string}? | {} | Tags for filtering |
+
+```lua
+local action = Goal.Action.new({
+    name = "CastFireball",
+    cost = 3,
+    preconditions = { hasMana = true, enemyInRange = true },
+    effects = { enemyDamaged = true },
+    cooldownTime = 2,
+    resourceCosts = {{ resource = "mana", amount = 25 }},
+    executeFn = function(agent, context)
+        agent:castSpell("fireball", context.target)
+        return true
+    end,
+})
+```
+
+### Methods
+
+#### Basic Properties
+
+```lua
+action:getName() -> string
+action:getPreconditions() -> State
+action:getEffects() -> State
+action:getCost(worldState: State?, agent: any?) -> number
+action:getBaseCost() -> number
+action:setBaseCost(cost: number)
+```
+
+#### Precondition Checking
+
+```lua
+action:checkPreconditions(worldState: State) -> boolean
+action:isValid(worldState: State, agent: any?) -> boolean
+action:getUnsatisfiedPreconditions(worldState: State) -> {string}
+```
+
+#### Effects & Execution
+
+```lua
+action:applyEffects(state: State) -> State
+action:execute(agent: any?, context: any?) -> boolean
+action:executeWithResources(agent: any?, context: any?) -> boolean
+action:canExecute(worldState: State, agent: any?, context: any?) -> boolean
+action:contributesToGoal(goalState: State) -> boolean
+```
+
+#### Cooldown System
+
+```lua
+action:isOnCooldown(currentTime: number?, currentTurn: number?) -> boolean
+action:getRemainingCooldown(currentTime: number?, currentTurn: number?) -> number
+action:startCooldown(currentTime: number?, currentTurn: number?)
+action:resetCooldown()
+action:getCooldownTime() -> number
+action:setCooldownTime(time: number)
+action:getCooldownMode() -> CooldownMode
+action:setCooldownMode(mode: CooldownMode)
+```
+
+#### Resource System
+
+```lua
+action:getResourceCosts() -> {{resource: string, amount: number}}
+action:addResourceCost(resource: string, amount: number)
+action:removeResourceCost(resource: string) -> boolean
+action:clearResourceCosts()
+action:checkResources(agent: any?) -> boolean
+action:consumeResources(agent: any?) -> boolean
+```
+
+#### Interrupt System
+
+```lua
+action:canInterrupt() -> boolean
+action:interrupt(agent: any?, context: any?) -> boolean
+action:isExecuting() -> boolean
+action:markStarted()
+action:markFinished()
+```
+
+#### Grouping & Tags
+
+```lua
+action:getGroup() -> string?
+action:setGroup(group: string)
+action:getTags() -> {string}
+action:hasTag(tag: string) -> boolean
+action:addTag(tag: string)
+action:removeTag(tag: string) -> boolean
+action:clearTags()
+```
+
+#### Debugging
+
+```lua
+action:debugSummary(worldState: State?, agent: any?) -> string
+```
+
+---
+
+## ActionSequence
+
+Chains multiple actions together for complex behaviors.
+
+### Constructor
+
+```lua
+ActionSequence.new(config: ActionSequenceConfig) -> ActionSequence
+```
+
+**ActionSequenceConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| name | string | required | Unique identifier |
+| actions | {Action} | required | Actions to execute |
+| failureStrategy | string | "abort" | "skip", "retry", or "abort" |
+| maxRetries | number | 3 | Max retries per action |
+| onStepComplete | function? | nil | Step completion callback |
+| onSequenceComplete | function? | nil | Sequence completion callback |
+| onInterrupt | function? | nil | Interrupt callback |
+| interruptible | boolean | true | Can be interrupted |
+
+```lua
+local combo = Goal.ActionSequence.new({
+    name = "AttackCombo",
+    actions = { lightAttack, heavyAttack, finisher },
+    failureStrategy = "abort",
+    onSequenceComplete = function(success, steps)
+        print("Combo", success and "complete!" or "broken!")
+    end,
+})
+```
+
+### Methods
+
+#### Basic Properties
+
+```lua
+sequence:getName() -> string
+sequence:getActions() -> {Action}
+sequence:getAction(index: number) -> Action?
+sequence:getLength() -> number
+sequence:isEmpty() -> boolean
+```
+
+#### Action Management
+
+```lua
+sequence:addAction(action: Action)
+sequence:insertAction(index: number, action: Action)
+sequence:removeAction(index: number) -> Action?
+sequence:clearActions()
+```
+
+#### Execution State
+
+```lua
+sequence:getCurrentStep() -> number
+sequence:getCurrentAction() -> Action?
+sequence:isExecuting() -> boolean
+sequence:isComplete() -> boolean
+sequence:getProgress() -> number
+sequence:reset()
+sequence:wasInterrupted() -> boolean
+```
+
+#### Interrupt Handling
+
+```lua
+sequence:canInterrupt() -> boolean
+sequence:interrupt() -> boolean
+```
+
+#### Cost & Effects
+
+```lua
+sequence:getTotalCost(worldState: State, agent: any?) -> number
+sequence:getCombinedEffects() -> State
+sequence:getPreconditions() -> State
+```
+
+#### Validation & Execution
+
+```lua
+sequence:canExecute(worldState: State, agent: any?) -> (boolean, number?, string?)
+sequence:executeStep(agent: any?, context: any?) -> (boolean, ExecutionStatus)
+sequence:executeAll(agent: any?, context: any?) -> (boolean, number)
+```
+
+**ExecutionStatus values:**
+- `"complete"` - Sequence finished successfully
+- `"continue"` - More steps remaining
+- `"skipped"` - Step skipped (failureStrategy = "skip")
+- `"retrying"` - Retrying failed step
+- `"interrupted"` - Sequence was interrupted
+- `"aborted"` - Sequence aborted due to failure
+- `"max_retries_exceeded"` - Retry limit reached
+
+#### Debugging
+
+```lua
+sequence:debugSummary(worldState: State?, agent: any?) -> string
+```
+
+---
+
+## Planner
+
+A* search planner that finds optimal action sequences.
+
+### Constructor
+
+```lua
+Planner.new(config: PlannerConfig?) -> Planner
+```
+
+**PlannerConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| maxIterations | number | 1000 | Maximum A* iterations |
+| maxPlanLength | number | 20 | Maximum actions in plan |
+| heuristicWeight | number | 1.0 | Weight for A* heuristic |
+| performanceMode | boolean | false | Enable optimizations |
+| priorityThreshold | number | 0 | Ignore goals below this |
+| maxEvaluationsPerTick | number | inf | Limit evaluations |
+| cacheTTL | number | 1.0 | Cache time-to-live |
+| enableProfiling | boolean | false | Track timing |
+
+```lua
+local planner = Goal.Planner.new({
+    maxIterations = 500,
+    performanceMode = true,
+    enableProfiling = true,
+})
+```
+
+### Methods
+
+#### Action Registration
+
+```lua
+planner:registerAction(action: Action)
+planner:registerActions(actions: {Action})
+planner:unregisterAction(action: Action) -> boolean
+planner:clearActions()
+planner:getActions() -> {Action}
+planner:getActionCount() -> number
+planner:getActionsByGroup(group: string) -> {Action}
+planner:getActionsByTag(tag: string) -> {Action}
+```
+
+#### Core Planning
+
+```lua
+planner:plan(startState: State, goal: Goal, agent: any?, context: any?) -> PlanResult
+```
+
+**PlanResult:**
+```lua
+{
+    actions = {Action},  -- Sequence of actions
+    totalCost = number,  -- Sum of action costs
+    success = boolean,   -- Whether planning succeeded
+    iterations = number, -- A* iterations used
+}
+```
+
+#### Multi-Goal Planning
+
+```lua
+planner:planBestGoal(startState: State, goals: {Goal}, agent: any?, context: any?)
+    -> (PlanResult, Goal?)
+```
+
+#### Batch Evaluation
+
+```lua
+planner:batchEvaluate(agents: {AgentEntry}, context: any?)
+    -> {BatchResult}
+```
+
+**AgentEntry:**
+```lua
+{
+    agent = any,        -- The agent object
+    state = State,      -- Agent's world state
+    goals = {Goal},     -- Agent's available goals
+}
+```
+
+**BatchResult:**
+```lua
+{
+    agent = any,        -- The agent object
+    plan = PlanResult?, -- The generated plan (nil if skipped)
+    goal = Goal?,       -- The selected goal (nil if no plan)
+    skipped = boolean,  -- Whether evaluation was skipped
+}
+```
+
+#### Plan Validation
+
+```lua
+planner:validatePlan(plan: PlanResult, currentState: State, agent: any?, context: any?)
+    -> (boolean, number?)
+planner:getRemainingCost(plan: PlanResult, fromStep: number, worldState: State, agent: any?)
+    -> number
+```
+
+#### Interrupt Handling
+
+```lua
+planner:shouldInterrupt(currentGoal: Goal, newGoal: Goal, worldState: State) -> boolean
+planner:findInterruptingGoal(currentGoal: Goal, goals: {Goal}, worldState: State) -> Goal?
+```
+
+#### Caching
+
+```lua
+planner:invalidateCache()
+planner:invalidateCacheFor(goalName: string)
+```
+
+#### Profiling
+
+```lua
+planner:getProfilingData() -> ProfilingData
+planner:resetProfiling()
+```
+
+**ProfilingData:**
+```lua
+{
+    totalPlanTime = number,
+    planCount = number,
+    averagePlanTime = number,
+    lastPlanTime = number,
+    totalEvaluations = number,
+}
+```
+
+#### Debugging
+
+```lua
+planner:debugSummary() -> string
+```
+
+---
+
+## Logger
+
+Debug logging system with configurable severity levels.
+
+### Log Levels
+
+```lua
+Logger.Level.NONE  = 0  -- No logging
+Logger.Level.ERROR = 1  -- Only errors
+Logger.Level.WARN  = 2  -- Errors and warnings
+Logger.Level.INFO  = 3  -- General information
+Logger.Level.DEBUG = 4  -- Detailed debugging
+Logger.Level.TRACE = 5  -- Very detailed tracing
+```
+
+### Methods
+
+#### Configuration
+
+```lua
+Logger.setLevel(level: number) -> Logger
+Logger.getLevel() -> number
+Logger.setCategoryLevel(category: string, level: number) -> Logger
+Logger.getCategoryLevel(category: string) -> number
+Logger.removeCategoryLevel(category: string) -> Logger
+Logger.clearCategoryLevels() -> Logger
+Logger.getCategories() -> {string}
+Logger.setOutputFunction(fn: function?) -> Logger
+Logger.reset() -> Logger
+```
+
+#### Logging
+
+```lua
+Logger.error(category: string, message: string, ...: any) -> Logger
+Logger.warn(category: string, message: string, ...: any) -> Logger
+Logger.info(category: string, message: string, ...: any) -> Logger
+Logger.debug(category: string, message: string, ...: any) -> Logger
+Logger.trace(category: string, message: string, ...: any) -> Logger
+```
+
+#### Utilities
+
+```lua
+Logger.isEnabled(level: number, category: string?) -> boolean
+Logger.getLevelName(level: number) -> string
+Logger.scoped(category: string) -> ScopedLogger
+Logger.debugSummary() -> string
+```
+
+**ScopedLogger:**
+```lua
+{
+    error = (message: string, ...any) -> (),
+    warn = (message: string, ...any) -> (),
+    info = (message: string, ...any) -> (),
+    debug = (message: string, ...any) -> (),
+    trace = (message: string, ...any) -> (),
+    isEnabled = (level: number) -> boolean,
+}
+```
+
+### Usage Example
+
+```lua
+local Logger = Goal.Logger
+
+-- Enable debug logging
+Logger.setLevel(Logger.Level.DEBUG)
+
+-- Category-specific logging
+Logger.setCategoryLevel("Planner", Logger.Level.TRACE)
+Logger.setCategoryLevel("Action", Logger.Level.WARN)
+
+-- Log messages
+Logger.info("Game", "Starting AI system")
+Logger.debug("Planner", "Planning for goal: %s", goal:getName())
+
+-- Scoped logger
+local log = Logger.scoped("Combat")
+log.debug("Attacking enemy: %s", enemy.name)
+```
+
+---
+
+## Utilities
+
+Helper utilities used internally and available for external use.
+
+### PriorityQueue
+
+Min-heap priority queue for A* search.
+
+```lua
+local pq = Goal.Utilities.PriorityQueue.new()
+
+pq:push(item, priority)
+local item = pq:pop()
+local item = pq:peek()
+local priority = pq:peekPriority()
+local isEmpty = pq:isEmpty()
+local size = pq:size()
+pq:clear()
+```
+
+### Table Utilities
+
+```lua
+-- Deep clone a table (recursive)
+Utilities.deepClone(source: any, _depth: number?) -> any
+
+-- Shallow clone a table (one level)
+Utilities.shallowClone(source: {[any]: any}) -> {[any]: any}
+
+-- Merge multiple tables into a new table
+Utilities.merge(...: {[any]: any}) -> {[any]: any}
+
+-- Deep equality check
+Utilities.deepEqual(valueA: any, valueB: any, _depth: number?) -> boolean
+
+-- Check if table is empty
+Utilities.isEmpty(tbl: {[any]: any}) -> boolean
+
+-- Count entries in a dictionary table
+Utilities.tableSize(tbl: {[any]: any}) -> number
+```
+
+### String Utilities
+
+```lua
+-- Generate a unique 16-character hex ID
+Utilities.generateId() -> string
+
+-- Format a table as a human-readable string
+Utilities.formatTable(tbl: any, indent: number?) -> string
+```
+
+### Math Utilities
+
+```lua
+-- Clamp a number between bounds
+Utilities.clamp(value: number, minValue: number, maxValue: number) -> number
+
+-- Linear interpolation
+Utilities.lerp(startValue: number, endValue: number, alpha: number) -> number
+
+-- Get sign of a number (-1, 0, or 1)
+Utilities.sign(value: number) -> number
+```
+
+### Timing Utilities
+
+```lua
+-- Measure execution time of a function
+Utilities.measureTime(fn: (...any) -> ...any, ...: any) -> (any, number)
+
+-- Create a rate limiter
+Utilities.createRateLimiter(intervalSeconds: number) -> () -> boolean
+```
+
+### Validation Utilities
+
+```lua
+-- Assert value is of expected type
+Utilities.assertType(value: any, expectedType: string, paramName: string)
+
+-- Assert value is not nil
+Utilities.assertNotNil(value: any, paramName: string)
+
+-- Assert number is within range
+Utilities.assertInRange(value: number, minValue: number, maxValue: number, paramName: string)
+```
+
+---
+
+## Helper Functions
+
+Convenience functions on the main Goal module.
+
+### Factory Functions
+
+```lua
+-- Create planner and state together
+Goal.createSetup(config: SetupConfig?) -> (Planner, State)
+
+-- Create action sequence
+Goal.createActionSequence(name: string, actions: {Action}, options: SequenceOptions?) -> ActionSequence
+
+-- Create performance-optimized planner
+Goal.createPerformancePlanner(config: PerformancePlannerConfig?) -> Planner
+
+-- Create cooldown action (convenience wrapper)
+Goal.createCooldownAction(config: ActionConfig) -> Action
+
+-- Create resource action (convenience wrapper)
+Goal.createResourceAction(config: ActionConfig) -> Action
+```
+
+### Formatting Functions
+
+```lua
+-- Format plan for display
+Goal.formatPlan(plan: PlanResult) -> string
+
+-- Format profiling data
+Goal.formatProfiling(data: ProfilingData) -> string
+
+-- Format state
+Goal.formatState(state: State) -> string
+
+-- Format action
+Goal.formatAction(action: Action) -> string
+
+-- Get module debug summary
+Goal.debugSummary() -> string
+```
+
+---
+
+## Type Definitions
+
+### FailureStrategy
+
+```lua
+type FailureStrategy = "skip" | "retry" | "abort"
+```
+
+### CooldownMode
+
+```lua
+type CooldownMode = "seconds" | "turns"
+```
+
+### ResourceCost
+
+```lua
+type ResourceCost = {
+    resource: string,
+    amount: number,
+}
+```
+
+### ExecutionStatus
+
+```lua
+type ExecutionStatus =
+    "complete" | "continue" | "skipped" |
+    "retrying" | "interrupted" | "aborted" |
+    "max_retries_exceeded"
+```
+
+---
+
+## Consideration (Utility AI)
+
+Utility AI response curves for nuanced decision-making.
+
+### Constructor
+
+```lua
+Consideration.new(config: ConsiderationConfig) -> Consideration
+```
+
+**ConsiderationConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| name | string | required | Unique identifier |
+| inputFn | function | required | (state, agent?, context?) -> number |
+| curve | CurveType | "linear" | Response curve type |
+| curveParams | table? | {} | Curve parameters (slope, exponent, etc.) |
+| customCurve | function? | nil | Custom curve function |
+| inputMin | number | 0 | Minimum expected input |
+| inputMax | number | 1 | Maximum expected input |
+| invert | boolean | false | Invert output (1 - output) |
+| clamp | boolean | true | Clamp output to 0-1 |
+| weight | number | 1.0 | Weight for combining |
+| description | string? | nil | Human-readable description |
+
+**CurveType values:**
+- `"linear"` - Direct proportional mapping
+- `"quadratic"` - Power curve (low values = very low output)
+- `"inverse"` - Simple inversion (1 - input)
+- `"inverse_quadratic"` - Inverse with acceleration
+- `"exponential"` - Slow start, rapid acceleration
+- `"logistic"` - S-shaped curve with smooth transition
+- `"step"` - Binary on/off at threshold
+- `"smoothstep"` - Smooth S-curve (Hermite)
+- `"bell"` - Gaussian peak around midpoint
+- `"custom"` - Use customCurve function
+
+```lua
+local healthUrgency = Goal.Consideration.new({
+    name = "HealthUrgency",
+    curve = "inverse_quadratic",
+    curveParams = { exponent = 2.5 },
+    inputFn = function(state, agent)
+        return state:get("health") / agent.maxHealth
+    end,
+    description = "High urgency when health is low",
+})
+
+local utility = healthUrgency:evaluate(worldState, agent)
+```
+
+### Methods
+
+#### Evaluation
+
+```lua
+consideration:evaluate(worldState: State, agent: any?, context: any?) -> number
+consideration:getName() -> string
+consideration:getWeight() -> number
+consideration:setWeight(weight: number)
+consideration:getCurve() -> CurveType
+consideration:getCurveParams() -> CurveParams
+consideration:setCurveParam(param: string, value: number)
+```
+
+#### Static Combination
+
+```lua
+-- Combine multiple considerations
+Consideration.combine(
+    considerations: {Consideration},
+    mode: CombineMode,
+    worldState: State,
+    agent: any?,
+    context: any?
+) -> number
+
+-- Create a combined consideration
+Consideration.createCombined(
+    name: string,
+    considerations: {Consideration},
+    mode: CombineMode
+) -> Consideration
+```
+
+**CombineMode values:**
+- `"multiply"` - Product of all scores
+- `"min"` - Minimum score
+- `"max"` - Maximum score
+- `"average"` - Average of scores
+- `"sum"` - Sum (clamped to 1)
+
+#### Factory Methods
+
+```lua
+-- Health urgency (inverse quadratic)
+Consideration.createHealthUrgency(healthKey: string, maxHealth: number, exponent: number?) -> Consideration
+
+-- Distance-based (closer = higher)
+Consideration.createDistanceConsideration(distanceKey: string, maxDistance: number) -> Consideration
+
+-- Resource availability
+Consideration.createResourceConsideration(resourceKey: string, maxResource: number, threshold: number?) -> Consideration
+
+-- Boolean condition
+Consideration.createBooleanConsideration(conditionKey: string, invertCondition: boolean?) -> Consideration
+
+-- Time decay
+Consideration.createTimeDecayConsideration(timestampKey: string, decayTime: number) -> Consideration
+```
+
+---
+
+## Memory
+
+Short-term and long-term memory system for intelligent AI agents.
+
+### Constructor
+
+```lua
+Memory.new(config: MemoryConfig?) -> Memory
+```
+
+**MemoryConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| workingMemoryDuration | number | 10 | Seconds for working memory |
+| episodicDecayRate | number | 0.05 | Decay rate per minute |
+| maxEpisodicMemories | number | 100 | Max episodic memories |
+| maxWorkingMemories | number | 20 | Max working memories |
+| factDecayEnabled | boolean | false | Whether facts decay |
+| factDecayRate | number | 0.01 | Fact decay per hour |
+| patternThreshold | number | 3 | Occurrences for pattern |
+
+```lua
+local memory = Goal.Memory.new({
+    workingMemoryDuration = 15,
+    maxEpisodicMemories = 200,
+})
+
+-- Record an event
+memory:recordEvent("player_attack", {
+    direction = "left",
+    damage = 25,
+}, 0.8)
+
+-- Check recent events
+if memory:hasRecentEvent("player_attack", 5) then
+    -- Player attacked in last 5 seconds
+end
+```
+
+### Methods
+
+#### Working Memory (Immediate/Tactical)
+
+```lua
+memory:recordEvent(eventType: string, data: table?, importance: number?)
+memory:hasRecentEvent(eventType: string, withinSeconds: number?) -> boolean
+memory:getRecentEvent(eventType: string) -> MemoryEvent?
+memory:getRecentEvents(eventType: string, withinSeconds: number?) -> {MemoryEvent}
+memory:countRecentEvents(eventType: string, withinSeconds: number?) -> number
+memory:clearWorkingMemory()
+```
+
+#### Episodic Memory (Event History)
+
+```lua
+memory:queryEpisodic(filter: {type: string?, minImportance: number?, withinSeconds: number?}) -> {MemoryEvent}
+memory:getTimeSinceEvent(eventType: string) -> number?
+```
+
+#### Semantic Memory (Long-term Facts)
+
+```lua
+memory:recordFact(key: string, value: any, confidence: number?)
+memory:getFact(key: string) -> (any?, number?)
+memory:hasFact(key: string, minConfidence: number?) -> boolean
+memory:getFactsByPrefix(prefix: string) -> {[string]: MemoryFact}
+memory:forgetFact(key: string) -> boolean
+memory:degradeFact(key: string, amount: number?)
+```
+
+#### Pattern Detection
+
+```lua
+memory:getPatterns(patternType: string?, minConfidence: number?) -> {PatternMatch}
+memory:getBestPattern(prefix: string) -> PatternMatch?
+```
+
+#### Management
+
+```lua
+memory:update(deltaTime: number?)
+memory:clearAll()
+memory:serialize() -> table
+Memory.deserialize(data: table) -> Memory
+memory:toJSON() -> string?
+Memory.fromJSON(json: string) -> Memory?
+```
+
+---
+
+## Blackboard
+
+Shared knowledge system for coordinated AI behavior.
+
+### Constructor
+
+```lua
+Blackboard.new(config: BlackboardConfig?) -> Blackboard
+```
+
+**BlackboardConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| name | string | "Blackboard" | Name for debugging |
+| defaultExpiration | number? | nil | Default expiration seconds |
+| maxEntries | number | 1000 | Maximum entries |
+| cleanupInterval | number | 10 | Cleanup interval seconds |
+
+```lua
+local squadBoard = Goal.Blackboard.new({
+    name = "Alpha Squad",
+    defaultExpiration = 60,
+})
+
+-- Post target information
+squadBoard:post("primary_target", {
+    id = "player_1",
+    position = Vector3.new(10, 0, 5),
+    threat = 0.8,
+}, "guard_1", 30) -- Expires in 30 seconds
+
+-- Read and claim
+local target = squadBoard:read("primary_target")
+if squadBoard:claim("primary_target", "guard_2") then
+    -- I'm now responsible for this target
+end
+```
+
+### Methods
+
+#### Core Operations
+
+```lua
+blackboard:post(key: string, value: any, owner: string?, expiresIn: number?, channel: string?, metadata: table?) -> BlackboardEntry
+blackboard:read(key: string) -> any?
+blackboard:getEntry(key: string) -> BlackboardEntry?
+blackboard:has(key: string) -> boolean
+blackboard:remove(key: string) -> boolean
+blackboard:getOwner(key: string) -> string?
+```
+
+#### Claiming System
+
+```lua
+blackboard:claim(key: string, claimant: string) -> boolean
+blackboard:releaseClaim(key: string, claimant: string) -> boolean
+blackboard:getClaimant(key: string) -> string?
+blackboard:isClaimed(key: string) -> boolean
+blackboard:getUnclaimed(channel: string?) -> {BlackboardEntry}
+```
+
+#### Channel Operations
+
+```lua
+blackboard:getChannel(channel: string) -> {BlackboardEntry}
+blackboard:clearChannel(channel: string)
+blackboard:getChannels() -> {string}
+```
+
+#### Subscriptions
+
+```lua
+blackboard:subscribe(pattern: string, callback: function, channel: string?) -> string
+blackboard:unsubscribe(subscriptionId: string) -> boolean
+```
+
+**Pattern examples:**
+- `"alert"` - Exact match
+- `"*"` - All keys
+- `"target_*"` - Keys starting with "target_"
+- `"*_alert"` - Keys ending with "_alert"
+
+#### Query Operations
+
+```lua
+blackboard:query(predicate: (entry: BlackboardEntry) -> boolean) -> {BlackboardEntry}
+blackboard:getByOwner(owner: string) -> {BlackboardEntry}
+blackboard:getKeysWithPrefix(prefix: string) -> {string}
+```
+
+#### Maintenance
+
+```lua
+blackboard:update(deltaTime: number?)
+blackboard:clear()
+blackboard:size() -> number
+```
+
+---
+
+## Perception
+
+Sensory awareness system for realistic NPC perception.
+
+### Constructor
+
+```lua
+Perception.new(config: PerceptionConfig?) -> Perception
+```
+
+**PerceptionConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| vision | VisionConfig? | {} | Vision settings |
+| hearing | HearingConfig? | {} | Hearing settings |
+| awareness | AwarenessConfig? | {} | Awareness settings |
+| enabled | boolean | true | Whether perception is active |
+
+**VisionConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| range | number | 50 | Maximum vision range |
+| angle | number | 120 | Field of view in degrees |
+| peripheralRange | number | 30 | Range for peripheral vision |
+| peripheralAngle | number | 40 | Additional peripheral FOV |
+| peripheralMultiplier | number | 0.5 | Awareness multiplier for peripheral |
+| obstructionCheck | function? | nil | Custom obstruction check |
+
+**HearingConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| range | number | 30 | Maximum hearing range |
+| sensitivity | number | 1.0 | Hearing sensitivity multiplier |
+| soundTypes | table? | {...} | Sound type -> awareness multiplier |
+
+**AwarenessConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| decayRate | number | 5 | Awareness decay per second |
+| buildupMultiplier | number | 1.0 | Awareness buildup multiplier |
+| thresholds | table? | {...} | State thresholds |
+| instantAlertOnDamage | boolean | true | Instant alert when damaged |
+| maxAwareness | number | 100 | Maximum awareness level |
+
+**AwarenessState values:**
+- `"unaware"` - No knowledge of target (0-20%)
+- `"curious"` - Slight interest (20-40%)
+- `"suspicious"` - Investigating (40-70%)
+- `"alert"` - Actively searching (70-90%)
+- `"combat"` - Engaged in combat (90-100%)
+
+```lua
+local perception = Goal.Perception.new({
+    vision = {
+        range = 60,
+        angle = 90,
+    },
+    hearing = {
+        range = 40,
+        sensitivity = 1.2,
+    },
+    awareness = {
+        decayRate = 3,
+        thresholds = { alert = 60, combat = 80 },
+    },
+})
+```
+
+### Methods
+
+#### Vision System
+
+```lua
+perception:canSee(perceiverPosition: Vector3, perceiverForward: Vector3, targetPosition: Vector3, checkObstruction: boolean?) -> (boolean, number, string)
+perception:setObstructionCheck(checkFn: function?)
+perception:getVisionRange() -> number
+perception:setVisionRange(range: number)
+perception:getVisionAngle() -> number
+perception:setVisionAngle(angle: number)
+```
+
+#### Hearing System
+
+```lua
+perception:canHear(perceiverPosition: Vector3, soundPosition: Vector3, soundVolume: number?) -> (boolean, number)
+perception:hearSound(soundType: string, soundPosition: Vector3, sourceId: string, perceiverPosition: Vector3, volume: number?) -> (boolean, number)
+perception:setHearingRange(range: number)
+perception:setHearingSensitivity(sensitivity: number)
+perception:registerSoundType(soundType: string, multiplier: number)
+```
+
+#### Awareness System
+
+```lua
+perception:getAwarenessLevel(targetId: string) -> number
+perception:getAwarenessState(targetId: string) -> AwarenessState
+perception:getAwarenessEntry(targetId: string) -> AwarenessEntry?
+perception:getLastKnownPosition(targetId: string) -> Vector3?
+perception:setAwarenessLevel(targetId: string, level: number)
+perception:clearAwareness(targetId: string)
+perception:clearAllAwareness()
+perception:getTrackedTargets() -> {string}
+perception:getTargetsInState(state: AwarenessState) -> {AwarenessEntry}
+perception:getMostAwareTarget() -> AwarenessEntry?
+```
+
+#### Stimulus Processing
+
+```lua
+perception:addStimulus(stimulus: Stimulus)
+perception:processVisualDetection(targetId: string, perceiverPosition: Vector3, perceiverForward: Vector3, targetPosition: Vector3) -> (boolean, number)
+perception:processDamage(sourceId: string, damage: number, sourcePosition: Vector3?)
+perception:getPendingStimuli() -> {Stimulus}
+perception:clearStimuli()
+```
+
+#### Update & Configuration
+
+```lua
+perception:update(deltaTime: number?)
+perception:setEnabled(enabled: boolean)
+perception:isEnabled() -> boolean
+perception:setAwarenessDecayRate(rate: number)
+perception:setThreshold(state: string, threshold: number)
+```
+
+---
+
+## Personality
+
+Trait-based personality system for varied AI behavior.
+
+### Constructor
+
+```lua
+Personality.new(config: PersonalityConfig?) -> Personality
+```
+
+**PersonalityConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| traits | Traits? | {} | Initial trait values |
+| name | string? | "Unnamed" | Personality name |
+| preset | PresetName? | nil | Use a preset as base |
+| variance | number? | 0 | Random variance to apply (0-1) |
+
+**Trait values (all 0-1):**
+| Trait | Low (0) | High (1) |
+|-------|---------|----------|
+| aggression | Passive | Aggressive |
+| courage | Cowardly | Fearless |
+| caution | Reckless | Careful |
+| loyalty | Self-focused | Team-focused |
+| patience | Impatient | Patient |
+| curiosity | Disinterested | Curious |
+| discipline | Undisciplined | Strict |
+| selfPreservation | Reckless | Survival-focused |
+
+**PresetName values:**
+- `"berserker"` - Aggressive, fearless, reckless
+- `"guard"` - Disciplined, cautious, loyal
+- `"coward"` - Fearful, self-preserving, cautious
+- `"tactician"` - Disciplined, patient, cautious
+- `"support"` - Loyal, patient, low aggression
+- `"balanced"` - All traits at 0.5
+- `"scout"` - Curious, cautious, disciplined
+- `"veteran"` - Courageous, disciplined, experienced
+
+**MoodName values:**
+- `"calm"` - Neutral state
+- `"angry"` - Increased aggression, decreased patience
+- `"fearful"` - Decreased courage, increased caution
+- `"confident"` - Increased courage, decreased caution
+- `"bored"` - Decreased patience and caution
+- `"alert"` - Slight increase to all combat traits
+
+```lua
+local warrior = Goal.Personality.new({
+    name = "Brave Warrior",
+    traits = {
+        aggression = 0.8,
+        courage = 0.9,
+        caution = 0.2,
+    },
+})
+
+-- Or from preset with variance
+local guard = Goal.Personality.fromPreset("guard", 0.1)
+```
+
+### Methods
+
+#### Trait Access
+
+```lua
+personality:getTrait(traitName: TraitName) -> number
+personality:setTrait(traitName: TraitName, value: number)
+personality:getAllTraits() -> Traits
+personality:getBaseTrait(traitName: TraitName) -> number
+```
+
+#### Decision Modifiers
+
+```lua
+personality:getModifier(modifierType: string) -> number
+personality:setCustomModifier(modifierType: string, value: number)
+personality:removeCustomModifier(modifierType: string)
+personality:getRetreatThreshold() -> number
+personality:getAggroRangeMultiplier() -> number
+```
+
+**Built-in modifier types:**
+- `"attack"` - Attack priority multiplier
+- `"retreat"` - Retreat priority multiplier
+- `"defend"` - Defense priority multiplier
+- `"support"` - Support ally priority multiplier
+- `"investigate"` - Investigation priority multiplier
+- `"patrol"` - Patrol effectiveness multiplier
+- `"wait"` - Patience for waiting multiplier
+- `"charge"` - Charging/rushing multiplier
+- `"flank"` - Flanking tactics multiplier
+- `"heal"` - Self/ally healing multiplier
+- `"risk"` - Risk tolerance multiplier
+- `"teamwork"` - Team coordination multiplier
+
+#### Mood System
+
+```lua
+personality:setMood(mood: MoodName, duration: number?)
+personality:getMood() -> (MoodName, number)
+personality:clearMood()
+```
+
+#### Comparison & Compatibility
+
+```lua
+personality:similarityTo(other: Personality) -> number
+personality:isCompatibleWith(other: Personality) -> (boolean, string)
+```
+
+#### Factory Methods
+
+```lua
+Personality.fromPreset(presetName: PresetName, variance: number?) -> Personality
+Personality.createRandom(constraints: table?) -> Personality
+Personality.getPresetNames() -> {PresetName}
+Personality.getTraitNames() -> {TraitName}
+```
+
+#### Serialization
+
+```lua
+personality:serialize() -> table
+Personality.deserialize(data: table) -> Personality
+personality:toJSON() -> string?
+Personality.fromJSON(json: string) -> Personality?
+```
+
+---
+
+## Navigation
+
+Tactical pathfinding system with cover evaluation, flanking routes, and flee paths.
+
+### Constructor
+
+```lua
+Navigation.new(config: NavigationConfig?) -> Navigation
+```
+
+**NavigationConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| gridSize | number | 4 | Grid cell size in studs |
+| maxIterations | number | 500 | Max A* iterations |
+| moveSpeed | number | 16 | NPC movement speed |
+| minCoverHeight | number | 3 | Minimum cover height |
+| maxCoverDistance | number | 50 | Max distance to search for cover |
+| preferredCoverDistance | number | 15 | Ideal cover distance from threat |
+| flankAngle | number | 60 | Angle to avoid when flanking (degrees) |
+| highGroundMinHeight | number | 3 | Min height difference for high ground |
+| chokeWidth | number | 8 | Max width for chokepoint detection |
+
+```lua
+local navigation = Goal.Navigation.new({
+    gridSize = 4,
+    maxIterations = 500,
+    moveSpeed = 16,
+    minCoverHeight = 3,
+})
+```
+
+### Methods
+
+#### Pathfinding
+
+```lua
+-- Find path between two positions
+navigation:findPath(start: Vector3, goal: Vector3, options: PathOptions?) -> PathResult
+
+-- PathResult structure
+{
+    waypoints = { Vector3 },   -- Path waypoints
+    pathFound = boolean,       -- Whether path was found
+    totalDistance = number,    -- Total path distance
+    estimatedTime = number,    -- Estimated travel time
+    iterations = number,       -- A* iterations used
+}
+
+-- PathOptions
+{
+    avoidThreats = boolean?,   -- Avoid threat positions
+    maxIterations = number?,   -- Override max iterations
+}
+
+-- Set current path for following
+navigation:setPath(path: PathResult)
+
+-- Get next waypoint to move toward
+navigation:getNextWaypoint() -> Vector3?
+
+-- Advance to next waypoint if reached (returns true if path complete)
+navigation:advanceWaypoint(currentPosition: Vector3, threshold: number?) -> boolean
+
+-- Cancel current path
+navigation:cancelPath()
+```
+
+#### Cover System
+
+```lua
+-- Find best cover from threats
+navigation:findBestCover(position: Vector3, threats: { Vector3 }) -> CoverPoint?
+
+-- CoverPoint structure
+{
+    position = Vector3,        -- Cover position
+    quality = number,          -- 0-1 quality score
+    height = number,           -- Cover height
+    exposedDirections = { Vector3 },  -- Directions not protected
+    retreatRoutes = number,    -- Number of escape routes
+}
+
+-- Scan all cover points in radius
+navigation:scanCoverPoints(center: Vector3, radius: number, threats: { Vector3 }?) -> { CoverPoint }
+
+-- Evaluate cover quality at position
+navigation:evaluateCoverQuality(position: Vector3, threats: { Vector3 }) -> number
+```
+
+#### Tactical Positions
+
+```lua
+-- Find flanking route to target
+navigation:findFlankingRoute(myPos: Vector3, targetPos: Vector3, targetFacing: Vector3?) -> PathResult?
+
+-- Get all flanking positions around target
+navigation:getFlankPositions(targetPos: Vector3, radius: number, targetFacing: Vector3?) -> { TacticalPosition }
+
+-- TacticalPosition structure
+{
+    position = Vector3,
+    type = "flank" | "highGround" | "chokepoint",
+    advantage = number,        -- 0-1 tactical advantage
+    description = string,      -- Human-readable description
+}
+
+-- Find high ground in area
+navigation:findHighGround(center: Vector3, radius: number) -> TacticalPosition?
+
+-- Evaluate height advantage over target
+navigation:evaluateHeightAdvantage(position: Vector3, targetPos: Vector3) -> number
+
+-- Find chokepoints in area
+navigation:findChokepoints(center: Vector3, radius: number) -> { TacticalPosition }
+```
+
+#### Flee System
+
+```lua
+-- Find escape path from threats
+navigation:findFleePath(position: Vector3, threats: { Vector3 }, minDistance: number?) -> PathResult
+
+-- Find safest direction to move
+navigation:findSafestDirection(position: Vector3, threats: { Vector3 }) -> Vector3
+
+-- Evaluate safety at position
+navigation:evaluateSafety(position: Vector3, threats: { Vector3 }) -> number
+```
+
+#### Threat Avoidance
+
+```lua
+-- Add zone to avoid during pathfinding
+navigation:addAvoidanceZone(position: Vector3, radius: number, cost: number?)
+
+-- Remove avoidance zone
+navigation:removeAvoidanceZone(position: Vector3)
+
+-- Clear all avoidance zones
+navigation:clearAvoidanceZones()
+```
+
+#### Integration
+
+```lua
+-- Connect to Perception for automatic threat updates
+navigation:setPerception(perception: Perception)
+
+-- Connect to Blackboard for squad coordination
+navigation:setBlackboard(blackboard: Blackboard, agentId: string)
+
+-- Share current destination with squad
+navigation:sharePosition()
+
+-- Connect to Memory for path learning
+navigation:setMemory(memory: Memory)
+```
+
+#### Grid Access
+
+```lua
+-- Get underlying navigation grid
+navigation:getGrid() -> NavigationGrid
+
+-- Get navigation statistics
+navigation:getStats() -> { pathsComputed: number, pathsFailed: number, successRate: number }
+```
+
+---
+
+## NavigationGrid
+
+Spatial grid representation for pathfinding. Used internally by Navigation.
+
+### Constructor
+
+```lua
+NavigationGrid.new(config: GridConfig?) -> NavigationGrid
+```
+
+**GridConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| cellSize | number | 4 | Cell size in studs |
+| heightTolerance | number | 4 | Max height change between cells |
+| maxSlope | number | 45 | Max walkable slope in degrees |
+| obstructionCheck | function? | nil | Custom obstruction check |
+| heightSampler | function? | nil | Custom height sampling |
+| walkableCheck | function? | nil | Custom walkability check |
+
+### Methods
+
+#### Coordinate Conversion
+
+```lua
+-- Convert world position to grid coordinates
+grid:worldToGrid(position: Vector3) -> (number, number, number)
+
+-- Convert grid coordinates to world position
+grid:gridToWorld(x: number, y: number, z: number) -> Vector3
+
+-- Get cell at world position
+grid:getCellAtPosition(position: Vector3) -> GridCell
+
+-- GridCell structure
+{
+    x = number,                -- Grid X
+    y = number,                -- Grid Y
+    z = number,                -- Grid Z
+    worldPosition = Vector3,   -- World position
+    walkable = boolean,        -- Is walkable
+    cost = number,             -- Movement cost
+    height = number,           -- Ground height
+}
+```
+
+#### Cell Operations
+
+```lua
+-- Get cell at grid coordinates
+grid:getCell(x: number, y: number, z: number) -> GridCell
+
+-- Get walkable neighbors
+grid:getNeighbors(cell: GridCell) -> { { cell: GridCell, cost: number } }
+
+-- Set cell cost
+grid:setCellCost(x: number, y: number, z: number, cost: number)
+
+-- Set cell walkability
+grid:setCellWalkable(x: number, y: number, z: number, walkable: boolean)
+
+-- Block area around position
+grid:blockArea(position: Vector3, radius: number)
+
+-- Unblock area around position
+grid:unblockArea(position: Vector3, radius: number)
+```
+
+#### Line of Sight
+
+```lua
+-- Check if clear path between positions
+grid:hasLineOfSight(from: Vector3, to: Vector3) -> boolean
+```
+
+#### Distance Calculations
+
+```lua
+grid:manhattanDistance(cellA: GridCell, cellB: GridCell) -> number
+grid:euclideanDistance(cellA: GridCell, cellB: GridCell) -> number
+grid:octileDistance(cellA: GridCell, cellB: GridCell) -> number  -- Best for 8-directional
+```
+
+#### Cache Management
+
+```lua
+grid:clearCache()
+grid:getCacheStats() -> { hits: number, misses: number, size: number, hitRate: number }
+```
+
+#### Configuration
+
+```lua
+grid:setObstructionCheck(fn: (Vector3, Vector3) -> boolean)
+grid:setHeightSampler(fn: (Vector3) -> number)
+grid:setWalkableCheck(fn: (Vector3) -> boolean)
+grid:getCellSize() -> number
+```
+
+---
+
+## PathfindingAdapter
+
+Bridges Roblox PathfindingService with Goal's tactical navigation system.
+
+### Constructor
+
+```lua
+PathfindingAdapter.new(config: PathfindingAdapterConfig?) -> PathfindingAdapter
+```
+
+**PathfindingAdapterConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| agentRadius | number | 2 | Agent collision radius |
+| agentHeight | number | 5 | Agent height |
+| agentCanJump | boolean | true | Can the agent jump |
+| agentCanClimb | boolean | false | Can the agent climb |
+| waypointSpacing | number | 4 | Spacing between waypoints |
+| costs | table? | {} | Custom pathfinding costs |
+| enableRaycastCheck | boolean | false | Additional raycast validation |
+
+```lua
+local pathfinder = Goal.PathfindingAdapter.new({
+    agentRadius = 3,
+    agentHeight = 6,
+    agentCanJump = true,
+    costs = {
+        { name = "Water", cost = 20 },
+        { name = "DangerZone", cost = math.huge },
+    },
+})
+```
+
+### Methods
+
+#### Core Pathfinding
+
+```lua
+pathfinder:findPath(startPosition: Vector3, endPosition: Vector3) -> PathResult
+pathfinder:findSafePath(startPosition: Vector3, endPosition: Vector3, threats: { ThreatInfo }) -> PathResult
+```
+
+**PathResult:**
+```lua
+{
+    success = boolean,
+    waypoints = { PathWaypoint },
+    status = Enum.PathStatus,
+    distance = number,
+    blocked = boolean,
+}
+```
+
+#### Tactical Pathfinding
+
+```lua
+pathfinder:findPathToCover(currentPos: Vector3, threatPos: Vector3, maxDistance: number?) -> (PathResult?, Vector3?)
+pathfinder:findFlankingPath(currentPos: Vector3, targetPos: Vector3, preferLeft: boolean?) -> (PathResult?, Vector3?)
+pathfinder:findRetreatPath(currentPos: Vector3, threatPos: Vector3, retreatDistance: number?) -> (PathResult?, Vector3?)
+```
+
+#### Path Management
+
+```lua
+pathfinder:onPathBlocked(callback: (number) -> ()) -> () -> ()
+pathfinder:isPathValid(path: PathResult, currentWaypointIndex: number) -> boolean
+pathfinder:getRemainingDistance(path: PathResult, currentWaypointIndex: number) -> number
+```
+
+#### Agent Configuration
+
+```lua
+pathfinder:setAgentRadius(radius: number)
+pathfinder:setAgentHeight(height: number)
+pathfinder:setAgentCanJump(canJump: boolean)
+pathfinder:setCost(name: string, cost: number)
+pathfinder:removeCost(name: string)
+```
+
+#### Debugging
+
+```lua
+pathfinder:debugSummary() -> string
+pathfinder:visualizePath(path: PathResult, color: Color3?, duration: number?)
+```
+
+---
+
+## SpatialGrid
+
+High-performance spatial hashing for O(1) proximity queries.
+
+### Constructor
+
+```lua
+SpatialGrid.new(cellSize: number?) -> SpatialGrid
+```
+
+**cellSize:** Size of each grid cell in studs (default: 20). Recommended: typical query radius / 2.
+
+```lua
+local grid = Goal.SpatialGrid.new(20)  -- 20 stud cells
+```
+
+### Methods
+
+#### Entity Management
+
+```lua
+grid:insert(id: string, position: Vector3, data: any?)
+grid:update(id: string, position: Vector3, data: any?)
+grid:remove(id: string) -> boolean
+grid:clear()
+```
+
+#### Queries
+
+```lua
+-- Find all entities within radius
+grid:query(position: Vector3, radius: number) -> { GridEntry }
+
+-- Find nearest entity
+grid:queryNearest(position: Vector3, maxRadius: number) -> (GridEntry?, number)
+
+-- Count entities within radius (no allocation)
+grid:queryCount(position: Vector3, radius: number) -> number
+
+-- Check if any entity exists within radius
+grid:hasAny(position: Vector3, radius: number) -> boolean
+
+-- Iterate all entities
+grid:forEach(callback: (id: string, position: Vector3, data: any?) -> ())
+```
+
+**GridEntry:**
+```lua
+{
+    id = string,
+    position = Vector3,
+    data = any?,
+}
+```
+
+#### Statistics
+
+```lua
+grid:getCount() -> number
+grid:getCellCount() -> number
+grid:getCellSize() -> number
+grid:getStats() -> { entities: number, cells: number, avgPerCell: number, cellSize: number }
+```
+
+---
+
+## HTN Task
+
+Represents a task in the HTN (Hierarchical Task Network) system.
+
+### Constructors
+
+```lua
+Task.newPrimitive(config: PrimitiveTaskConfig) -> Task
+Task.newCompound(config: CompoundTaskConfig) -> Task
+```
+
+**PrimitiveTaskConfig:**
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Task name |
+| action | Action? | Underlying Action to execute |
+| actionConfig | ActionConfig? | Or create Action from config |
+
+**CompoundTaskConfig:**
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Task name |
+| methods | { Method }? | Decomposition methods |
+
+```lua
+-- Primitive task (maps to Action)
+local shootTask = Goal.Task.newPrimitive({
+    name = "Shoot",
+    action = Goal.Action.new({
+        name = "Shoot",
+        preconditions = { hasAmmo = true },
+        effects = { targetDamaged = true },
+    })
+})
+
+-- Compound task (decomposes via Methods)
+local engageTask = Goal.Task.newCompound({
+    name = "EngageEnemy",
+    methods = { directAttackMethod, reloadFirstMethod },
+})
+```
+
+### Methods
+
+#### Identity
+
+```lua
+task:getName() -> string
+task:getType() -> "primitive" | "compound"
+task:isPrimitive() -> boolean
+task:isCompound() -> boolean
+```
+
+#### Primitive Task Methods
+
+```lua
+task:getAction() -> Action?
+task:checkPreconditions(worldState: State) -> boolean
+task:applyEffects(state: State) -> State
+task:canExecute(worldState: State, agent: any?) -> boolean
+task:execute(agent: any?, context: any?) -> boolean
+```
+
+#### Compound Task Methods
+
+```lua
+task:getMethods() -> { Method }
+task:addMethod(method: Method)
+task:removeMethod(methodName: string) -> boolean
+task:getMethodCount() -> number
+task:getValidMethods(worldState: State, agent: any?) -> { Method }
+```
+
+#### Debugging
+
+```lua
+task:debugSummary() -> string
+```
+
+---
+
+## HTN Method
+
+Represents a decomposition method for HTN compound tasks.
+
+### Constructor
+
+```lua
+Method.new(config: MethodConfig) -> Method
+```
+
+**MethodConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| name | string | required | Method name |
+| preconditions | table? | {} | State preconditions |
+| subtasks | { string } | required | Ordered subtask names |
+| cost | number | 1 | Selection cost (lower = preferred) |
+| validateFn | function? | nil | Custom validation |
+
+```lua
+local directAttack = Goal.Method.new({
+    name = "DirectAttack",
+    preconditions = { hasAmmo = true },
+    subtasks = { "Shoot" },
+    cost = 1,
+})
+
+local cautiousApproach = Goal.Method.new({
+    name = "CautiousApproach",
+    preconditions = {},
+    subtasks = { "TakeCover", "Reload", "Shoot" },
+    cost = 3,
+    validateFn = function(state, agent)
+        return (state:get("health") or 100) < 50
+    end
+})
+```
+
+### Methods
+
+```lua
+method:getName() -> string
+method:checkPreconditions(worldState: State) -> boolean
+method:isValid(worldState: State, agent: any?) -> boolean
+method:canApply(worldState: State, agent: any?) -> boolean
+method:getPreconditions() -> State
+method:getSubtasks() -> { string }
+method:getSubtaskCount() -> number
+method:getCost() -> number
+method:debugSummary() -> string
+```
+
+---
+
+## HTN Domain
+
+Registry for HTN tasks and methods.
+
+### Constructor
+
+```lua
+HTNDomain.new(config: HTNDomainConfig) -> HTNDomain
+```
+
+**HTNDomainConfig:**
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Domain name |
+
+```lua
+local domain = Goal.HTNDomain.new({ name = "CombatAI" })
+```
+
+### Methods
+
+#### Task Management
+
+```lua
+domain:registerTask(task: Task) -> boolean
+domain:registerTasks(tasks: { Task }) -> number
+domain:getTask(name: string) -> Task?
+domain:hasTask(name: string) -> boolean
+domain:removeTask(name: string) -> boolean
+domain:clearTasks()
+```
+
+#### Queries
+
+```lua
+domain:getTaskCount() -> number
+domain:getPrimitiveCount() -> number
+domain:getCompoundCount() -> number
+domain:getAllTaskNames() -> { string }
+domain:getPrimitiveTasks() -> { Task }
+domain:getCompoundTasks() -> { Task }
+domain:findReferencingTasks(taskName: string) -> { string }
+```
+
+#### Validation
+
+```lua
+domain:validate() -> (boolean, { string }?)
+```
+
+Returns `(true, nil)` if valid, or `(false, errors)` if invalid.
+
+#### Debugging
+
+```lua
+domain:getName() -> string
+domain:debugSummary() -> string
+```
+
+---
+
+## HTN Planner
+
+Hierarchical Task Network planner with depth-first decomposition.
+
+### Constructor
+
+```lua
+HTNPlanner.new(config: HTNPlannerConfig) -> HTNPlanner
+```
+
+**HTNPlannerConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| domain | HTNDomain | required | Task domain |
+| maxDepth | number | 20 | Max decomposition depth |
+| maxIterations | number | 1000 | Max planning iterations |
+| enableBacktracking | boolean | true | Try alternate methods on failure |
+| enableGOAPFallback | boolean | false | Fallback to GOAP planner |
+| goapPlanner | Planner? | nil | GOAP planner for fallback |
+| enableProfiling | boolean | false | Log timing info |
+
+```lua
+local htnPlanner = Goal.HTNPlanner.new({
+    domain = domain,
+    maxDepth = 20,
+    enableBacktracking = true,
+})
+```
+
+### Methods
+
+#### Planning
+
+```lua
+htnPlanner:plan(rootTask: string | Task, startState: State, agent: any?, context: any?) -> HTNPlanResult
+```
+
+**HTNPlanResult:**
+```lua
+{
+    actions = { Action },    -- Sequence of actions to execute
+    success = boolean,       -- Whether planning succeeded
+    iterations = number,     -- Planning iterations used
+    decompositionDepth = number, -- Max depth reached
+    totalCost = number,      -- Sum of action costs
+    failureReason = string?, -- If failed: reason code
+    failedTask = string?,    -- If failed: task that failed
+}
+```
+
+**Failure reasons:**
+- `"unknown_task"` - Root task not found in domain
+- `"no_action"` - Primitive task has no action
+- `"precondition_failed"` - Action preconditions not met
+- `"validation_failed"` - Action custom validation failed
+- `"no_valid_method"` - No method's preconditions satisfied
+- `"unknown_subtask"` - Method references unknown subtask
+- `"max_depth"` - Decomposition too deep
+- `"max_iterations"` - Too many iterations
+
+#### Execution
+
+```lua
+htnPlanner:executePlan(plan: HTNPlanResult, agent: any?, context: any?) -> (boolean, number)
+htnPlanner:executeStep(plan: HTNPlanResult, step: number, agent: any?, context: any?) -> boolean
+```
+
+#### Configuration
+
+```lua
+htnPlanner:setMaxDepth(depth: number)
+htnPlanner:getMaxDepth() -> number
+htnPlanner:setMaxIterations(iterations: number)
+htnPlanner:getMaxIterations() -> number
+htnPlanner:setBacktracking(enabled: boolean)
+htnPlanner:isBacktrackingEnabled() -> boolean
+htnPlanner:setGOAPFallback(enabled: boolean, goapPlanner: Planner?)
+htnPlanner:isGOAPFallbackEnabled() -> boolean
+htnPlanner:setProfiling(enabled: boolean)
+```
+
+#### Domain
+
+```lua
+htnPlanner:getDomain() -> HTNDomain
+htnPlanner:setDomain(domain: HTNDomain)
+```
+
+#### Debugging
+
+```lua
+htnPlanner:debugSummary() -> string
+HTNPlanner.formatPlan(plan: HTNPlanResult) -> string
+```
+
+### HTN Example
+
+```lua
+local Goal = require(path.to.Goal)
+
+-- Create domain
+local domain = Goal.HTNDomain.new({ name = "Combat" })
+
+-- Primitive tasks
+domain:registerTask(Goal.Task.newPrimitive({
+    name = "Shoot",
+    action = Goal.Action.new({
+        name = "Shoot",
+        preconditions = { hasAmmo = true, targetVisible = true },
+        effects = { targetDamaged = true },
+    })
+}))
+
+domain:registerTask(Goal.Task.newPrimitive({
+    name = "Reload",
+    action = Goal.Action.new({
+        name = "Reload",
+        preconditions = { hasAmmo = false },
+        effects = { hasAmmo = true },
+    })
+}))
+
+-- Compound task
+domain:registerTask(Goal.Task.newCompound({
+    name = "EngageEnemy",
+    methods = {
+        Goal.Method.new({
+            name = "DirectAttack",
+            preconditions = { hasAmmo = true },
+            subtasks = { "Shoot" },
+            cost = 1,
+        }),
+        Goal.Method.new({
+            name = "ReloadFirst",
+            preconditions = { hasAmmo = false },
+            subtasks = { "Reload", "Shoot" },
+            cost = 2,
+        }),
+    }
+}))
+
+-- Validate domain
+local valid, errors = domain:validate()
+if not valid then
+    for _, err in ipairs(errors) do
+        warn(err)
+    end
+end
+
+-- Create planner and plan
+local htnPlanner = Goal.HTNPlanner.new({ domain = domain })
+local state = Goal.State.new({ hasAmmo = false, targetVisible = true })
+local plan = htnPlanner:plan("EngageEnemy", state)
+
+if plan.success then
+    print("Plan found:")
+    for i, action in ipairs(plan.actions) do
+        print(i, action:getName())  -- 1: Reload, 2: Shoot
+    end
+end
+```
+
+---
+
+## Actor Modules
+
+Parallel execution and multi-NPC management modules. These are lazy-loaded and accessed via `Goal.Actor.*` or directly as `Goal.SharedBlackboard`, `Goal.ActorPool`, `Goal.NPCScheduler`.
+
+### SharedBlackboard
+
+Thread-safe shared knowledge system for parallel AI execution using Roblox SharedTable API.
+
+#### Constructor
+
+```lua
+SharedBlackboard.new(config: SharedBlackboardConfig?) -> SharedBlackboard
+SharedBlackboard.fromSharedTable(sharedTable: SharedTable, config: SharedBlackboardConfig?) -> SharedBlackboard
+```
+
+**SharedBlackboardConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| name | string | "SharedBlackboard" | Name for debugging |
+| defaultTTL | number | 30 | Default time-to-live in seconds |
+
+```lua
+-- Main thread: create blackboard
+local blackboard = Goal.SharedBlackboard.new({ name = "SquadBoard" })
+
+-- Actor: wrap existing SharedTable
+local blackboard = Goal.SharedBlackboard.fromSharedTable(sharedTable)
+```
+
+#### Core Operations
+
+```lua
+blackboard:set(key: string, value: any, ttl: number?, owner: string?)
+blackboard:get(key: string) -> any?
+blackboard:has(key: string) -> boolean
+blackboard:remove(key: string) -> boolean
+```
+
+#### Atomic Operations
+
+```lua
+blackboard:increment(key: string, delta: number) -> number
+blackboard:atomicUpdate(key: string, updateFn: (any?) -> any) -> any
+blackboard:setIfNotExists(key: string, value: any, ttl: number?) -> boolean
+blackboard:compareAndSwap(key: string, expected: any, newValue: any) -> boolean
+```
+
+#### Target Claiming
+
+```lua
+blackboard:claimTarget(targetId: string, claimerId: string, ttl: number?) -> boolean
+blackboard:releaseTarget(targetId: string, claimerId: string) -> boolean
+blackboard:getTargetClaimer(targetId: string) -> string?
+blackboard:isTargetClaimedBy(targetId: string, claimerId: string) -> boolean
+```
+
+#### Team Alerts
+
+```lua
+blackboard:broadcastAlert(alertType: string, data: table, ttl: number?)
+blackboard:getAlert(alertType: string) -> { data: table, timestamp: number }?
+blackboard:clearAlert(alertType: string)
+```
+
+#### Subscriptions (Local Only)
+
+```lua
+blackboard:subscribe(key: string, callback: (string, any) -> ()) -> () -> ()
+```
+
+#### Utilities
+
+```lua
+blackboard:cleanup() -> number
+blackboard:clear()
+blackboard:getSharedTable() -> SharedTable
+blackboard:getName() -> string
+blackboard:isOwner() -> boolean
+```
+
+---
+
+### ActorPool
+
+High-performance concurrent task scheduler with O(1) operations.
+
+#### Constructor
+
+```lua
+ActorPool.new(config: ActorPoolConfig?) -> ActorPool
+```
+
+**ActorPoolConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| poolSize | number | 4 | Number of worker slots |
+| name | string | "GoalWorker" | Worker name prefix |
+
+```lua
+local pool = Goal.ActorPool.new({ poolSize = 8 })
+```
+
+#### Work Submission
+
+```lua
+-- Blocking: waits for result
+pool:submit(callback: (workerId: number) -> T) -> T
+
+-- Non-blocking: returns handle
+pool:submitAsync(callback: (workerId: number) -> T) -> { await: () -> T, isComplete: () -> boolean }
+```
+
+#### Batch Processing
+
+```lua
+-- Process items concurrently
+pool:processBatch(items: { T }, processor: (item: T, workerId: number) -> R) -> { R }
+
+-- Process with concurrency limit
+pool:processBatchLimited(items: { T }, processor: (item: T, workerId: number) -> R, limit: number?) -> { R }
+```
+
+#### Pool Management
+
+```lua
+pool:getStats() -> PoolStats
+pool:getPoolSize() -> number
+pool:getIdleCount() -> number
+pool:getBusyCount() -> number
+pool:getQueueSize() -> number
+pool:resize(newSize: number)
+pool:destroy()
+```
+
+**PoolStats:**
+```lua
+{
+    poolSize = number,
+    busyCount = number,
+    idleCount = number,
+    queuedCount = number,
+    totalProcessed = number,
+    averageProcessTime = number,
+}
+```
+
+---
+
+### NPCScheduler
+
+High-level scheduler for managing NPC AI updates with tick budgeting.
+
+#### Constructor
+
+```lua
+NPCScheduler.new(config: NPCSchedulerConfig?) -> NPCScheduler
+```
+
+**NPCSchedulerConfig:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| tickBudget | number | 0.004 | Max seconds per tick (4ms) |
+| maxNPCsPerTick | number | 10 | Max NPCs to update per tick |
+| updateInterval | number | 0.1 | Min seconds between NPC updates |
+| priorityDecay | number | 0.95 | Priority decay rate per tick |
+
+```lua
+local scheduler = Goal.NPCScheduler.new({
+    tickBudget = 0.004,  -- 4ms budget
+    maxNPCsPerTick = 15,
+})
+```
+
+#### NPC Registration
+
+```lua
+scheduler:registerNPC(id: string, callbacks: NPCCallbacks, plannerConfig: table?) -> NPCEntry
+scheduler:unregisterNPC(id: string) -> boolean
+scheduler:getNPC(id: string) -> NPCEntry?
+scheduler:getPlanner(id: string) -> Planner?
+scheduler:registerActions(id: string, actions: { Action })
+scheduler:registerActionsForAll(actions: { Action })
+```
+
+**NPCCallbacks:**
+```lua
+{
+    getState: () -> State,           -- Get current world state
+    getGoal: () -> Goal?,            -- Get single goal (or use getGoals)
+    getGoals: (() -> { Goal })?,     -- Get multiple goals
+    onPlanReady: (plan: PlanResult) -> (),  -- Called when plan is ready
+    onError: ((string) -> ())?,      -- Called on planning error
+    getPriority: (() -> number)?,    -- Dynamic priority multiplier
+}
+```
+
+#### Priority Management
+
+```lua
+scheduler:setNPCPriority(id: string, priority: number)
+scheduler:setNPCEnabled(id: string, enabled: boolean)
+scheduler:boostPriority(id: string, boost: number)
+```
+
+#### Scheduler Control
+
+```lua
+scheduler:start()
+scheduler:stop()
+scheduler:isRunning() -> boolean
+scheduler:tick(dt: number?)  -- Manual tick
+```
+
+#### Immediate Updates
+
+```lua
+scheduler:forceUpdate(id: string) -> ProfilingData?
+scheduler:forceUpdateAll() -> number
+```
+
+#### Configuration
+
+```lua
+scheduler:setTickBudget(budget: number)
+scheduler:setMaxNPCsPerTick(max: number)
+scheduler:setUpdateInterval(interval: number)
+```
+
+#### Statistics
+
+```lua
+scheduler:getStats() -> SchedulerStats
+scheduler:getNPCStats(id: string) -> { updateCount: number, lastUpdate: number, priority: number }?
+scheduler:resetStats()
+```
+
+**SchedulerStats:**
+```lua
+{
+    registeredNPCs = number,
+    activeNPCs = number,
+    updatesThisTick = number,
+    totalUpdates = number,
+    averageTickTime = number,
+    tickBudgetUsage = number,  -- 0-1 percentage
+}
+```
+
+#### Cleanup
+
+```lua
+scheduler:destroy()
+```
+
+---
+
+## Complete Example
+
+```lua
+local Goal = require(path.to.goal)
+
+-- Enable debug logging
+Goal.Logger.setLevel(Goal.Logger.Level.INFO)
+
+-- Create planner
+local planner = Goal.Planner.new({ enableProfiling = true })
+
+-- Define actions
+local gatherWood = Goal.Action.new({
+    name = "GatherWood",
+    cost = 2,
+    preconditions = { nearForest = true },
+    effects = { hasWood = true },
+})
+
+local buildShelter = Goal.Action.new({
+    name = "BuildShelter",
+    cost = 3,
+    preconditions = { hasWood = true },
+    effects = { hasShelter = true },
+})
+
+planner:registerActions({ gatherWood, buildShelter })
+
+-- Define goal
+local shelterGoal = Goal.Goal.new({
+    name = "GetShelter",
+    desiredState = { hasShelter = true },
+    priority = 5,
+})
+
+-- Create world state
+local worldState = Goal.State.new({
+    nearForest = true,
+    hasWood = false,
+    hasShelter = false,
+})
+
+-- Plan and execute
+local plan = planner:plan(worldState, shelterGoal)
+
+if plan.success then
+    print(Goal.formatPlan(plan))
+
+    for _, action in ipairs(plan.actions) do
+        action:execute()
+        worldState = action:applyEffects(worldState)
+    end
+end
+
+-- Show profiling
+print(Goal.formatProfiling(planner:getProfilingData()))
+```
+
+---
+
+## Example Files
+
+The `examples/` folder contains complete, runnable examples:
+
+### main_example.server.lua
+
+**The Ultimate NPC AI Demo** - See 800 intelligent NPCs patrol, detect threats, coordinate as a squad, and engage in tactical combat using all core systems of Goal.
+
+**Systems Demonstrated:**
+- **GOAP Planning** - A* search algorithm finds optimal action sequences
+- **HTN Planning** - Hierarchical Task Networks for structured sequences
+- **Perception** - Vision cones, hearing radius, awareness states (unaware → combat)
+- **Memory** - NPCs remember events and learn player patterns
+- **Personality** - Berserkers charge in, Tacticians use cover, Guards defend
+- **Blackboard** - Squad coordination prevents NPC clustering
+- **Utility AI** - Response curves for context-aware decisions
+- **Navigation** - Tactical pathfinding, cover-seeking, flanking
+
+**Behaviors:**
+| Behavior | What Happens |
+|----------|--------------|
+| **Patrolling** | NPCs walk between waypoints, scanning for threats |
+| **Detection** | Vision cones and hearing detect nearby players |
+| **Pursuit** | NPCs chase targets, sharing intel with their squad |
+| **Combat** | Engage in melee attacks with visual feedback |
+| **Search** | Lost targets? NPCs investigate last known position |
+| **Retreat** | Low health triggers tactical withdrawal |
+
+**Personality Archetypes:**
+| Archetype | Behavior |
+|-----------|----------|
+| **Veteran** | Balanced, experienced fighter |
+| **Berserker** | High aggression, charges into combat |
+| **Tactician** | Cautious, uses cover and flanking |
+| **Guard** | Defensive, prioritizes self-preservation |
+
+**Quick Start:**
+1. Create a rig in Roblox Studio (Avatar > Rig Builder)
+2. Move the rig to **ServerStorage** and rename to **"Rig"**
+3. Run `rojo serve dev.project.json`
+4. Press Play - 800 NPCs will spawn!
+
+### Archived Examples
+
+Previous examples are available in the `examples/archive/` folder for reference
+
+---
+
+## License
+
+MIT License - See [LICENSE](../LICENSE) for details.

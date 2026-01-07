@@ -1,0 +1,8 @@
+{
+  "className": "Humanoid",
+  "properties": {
+    "HealthDisplayType": "AlwaysOff",
+    "HipHeight": 2,
+    "RigType": "R15"
+  }
+}

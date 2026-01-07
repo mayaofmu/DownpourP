@@ -1,0 +1,72 @@
+{
+  "className": "ParticleEmitter",
+  "properties": {
+    "Color": [{
+        "time": 0.0,
+        "color": [0.9608, 1.0, 0.2431]
+      }, {
+        "time": 1.0,
+        "color": [0.9608, 1.0, 0.2431]
+      }],
+    "Drag": 10,
+    "EmissionDirection": "Back",
+    "FlipbookFramerate": [1.0938, 1.0938],
+    "Lifetime": [1, 1],
+    "Rate": 124,
+    "Shape": "Disc",
+    "Size": [{
+        "time": 0.0,
+        "value": 0.9286,
+        "envelope": 0.7867
+      }, {
+        "time": 0.1791,
+        "value": 0.8344,
+        "envelope": 0.5949
+      }, {
+        "time": 0.6351,
+        "value": 0.1266,
+        "envelope": 0.2367
+      }, {
+        "time": 1.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }],
+    "Speed": [6, 19],
+    "SpreadAngle": [333, 333],
+    "Texture": "rbxassetid://10591868650",
+    "Transparency": [{
+        "time": 0.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.0349,
+        "value": 0.6523,
+        "envelope": 0.0
+      }, {
+        "time": 0.0909,
+        "value": 0.4023,
+        "envelope": 0.0
+      }, {
+        "time": 0.1697,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.6619,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.8689,
+        "value": 0.2057,
+        "envelope": 0.0
+      }, {
+        "time": 0.9749,
+        "value": 0.7423,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }],
+    "ZOffset": 3
+  }
+}

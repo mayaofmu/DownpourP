@@ -1,0 +1,8 @@
+{
+  "className": "UIStroke",
+  "properties": {
+    "ApplyStrokeMode": "Border",
+    "Color": [0.9059, 0.7176, 0.2784],
+    "Transparency": 0.5
+  }
+}

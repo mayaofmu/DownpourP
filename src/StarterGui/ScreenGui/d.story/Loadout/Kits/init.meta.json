@@ -1,0 +1,17 @@
+{
+  "className": "ScrollingFrame",
+  "properties": {
+    "Active": true,
+    "BackgroundColor3": [1, 1, 1],
+    "BackgroundTransparency": 1,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "CanvasSize": [[0.0, 0.0], [1.5, 0.0]],
+    "ClipsDescendants": false,
+    "Position": [[0.7236, 0.0], [0.2658, 0.0]],
+    "ScrollBarImageColor3": [0, 0, 0],
+    "ScrollBarThickness": 0,
+    "Size": [[0.2431, 0.0], [0.6615, 0.0]],
+    "Tags": ["blob-ui-object"]
+  }
+}

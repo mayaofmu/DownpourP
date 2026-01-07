@@ -1,0 +1,99 @@
+{
+  "className": "ParticleEmitter",
+  "properties": {
+    "Attributes": {
+      "EmitDuration": 0,
+      "FXTrigger": "SpawnEffect",
+      "EmitDelay": 0,
+      "TimeScale_End": 1,
+      "EmitCount": 12,
+      "TimeScale_Duration": 0.0482,
+      "TimeScale_Start": 1
+    },
+    "Brightness": 12,
+    "Color": [{
+        "time": 0.0,
+        "color": [1.0, 0.1882, 0.1882]
+      }, {
+        "time": 1.0,
+        "color": [1.0, 0.1882, 0.1882]
+      }],
+    "Drag": 14.1827,
+    "Enabled": false,
+    "FlipbookFramerate": [15.2106, 15.2106],
+    "FlipbookLayout": "Grid4x4",
+    "FlipbookMode": "OneShot",
+    "Lifetime": [0.1332, 0.3197],
+    "LockedToPart": true,
+    "Orientation": "VelocityParallel",
+    "Rate": 120.1117,
+    "Rotation": [-90, -90],
+    "Size": [{
+        "time": 0.0,
+        "value": 0.1801,
+        "envelope": 0.2023
+      }, {
+        "time": 0.3051,
+        "value": 0.7889,
+        "envelope": 0.4288
+      }, {
+        "time": 1.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }],
+    "Speed": [30.3376, 80.8776],
+    "SpreadAngle": [124, 124],
+    "Squash": [{
+        "time": 0.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.3172,
+        "value": 0.8162,
+        "envelope": 0.1787
+      }, {
+        "time": 0.6132,
+        "value": 0.2362,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": -0.0615,
+        "envelope": 0.0
+      }],
+    "Texture": "rbxassetid://15418442509",
+    "Transparency": [{
+        "time": 0.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.0349,
+        "value": 0.6523,
+        "envelope": 0.0
+      }, {
+        "time": 0.0909,
+        "value": 0.4023,
+        "envelope": 0.0
+      }, {
+        "time": 0.1697,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.6619,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.8689,
+        "value": 0.2057,
+        "envelope": 0.0
+      }, {
+        "time": 0.9749,
+        "value": 0.7423,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }],
+    "ZOffset": 2
+  }
+}

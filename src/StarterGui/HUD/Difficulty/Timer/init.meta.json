@@ -1,0 +1,26 @@
+{
+  "className": "TextLabel",
+  "properties": {
+    "AnchorPoint": [0.5, 0],
+    "BackgroundColor3": [0.1686, 0.7098, 0.2157],
+    "BackgroundTransparency": 1,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "FontFace": {
+      "family": "rbxasset://fonts/families/Inconsolata.json",
+      "weight": "Bold",
+      "style": "Normal",
+      "cachedFaceId": null
+    },
+    "Position": [[0.6562, 0.0], [0.0, 0.0]],
+    "Size": [[0.6876, 0.0], [0.2743, 0.0]],
+    "Tags": ["blob-ui-object"],
+    "Text": "1:00",
+    "TextColor3": [1, 1, 1],
+    "TextScaled": true,
+    "TextSize": 24,
+    "TextWrapped": true,
+    "TextXAlignment": "Left",
+    "TextYAlignment": "Top"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "className": "SpecialMesh",
+  "properties": {
+    "MeshId": "rbxasset://fonts/rocketlauncher.mesh",
+    "MeshType": "FileMesh",
+    "Scale": [1.0237, 1.0237, 1.0237],
+    "TextureId": "rbxasset://textures/rocketlaunchertex.png"
+  }
+}

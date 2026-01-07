@@ -1,0 +1,13 @@
+{
+  "className": "MeshPart",
+  "properties": {
+    "CFrame": [37.6148, 1.4941, 0.0374, 0.4695, 0, 0.8829, 0, 1, 0, -0.8829, 0, 0.4695],
+    "CanCollide": false,
+    "InitialSize": [84.5442, 113.0412, 93.2369],
+    "MeshContent": "rbxassetid://8474772431",
+    "RenderFidelity": "Precise",
+    "Size": [2.1194, 2.8338, 2.3373],
+    "TextureContent": "rbxassetid://8474772520"
+  },
+  "originalName": "Meshes/Toxic Waste Can"
+}

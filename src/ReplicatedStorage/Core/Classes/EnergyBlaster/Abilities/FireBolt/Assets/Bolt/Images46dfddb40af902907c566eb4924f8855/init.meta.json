@@ -1,0 +1,46 @@
+{
+  "className": "Trail",
+  "properties": {
+    "Brightness": 4,
+    "Color": [{
+        "time": 0.0,
+        "color": [1.0, 0.0, 0.0]
+      }, {
+        "time": 1.0,
+        "color": [1.0, 0.0, 0.0]
+      }],
+    "FaceCamera": true,
+    "Lifetime": 0.22,
+    "LightEmission": 1,
+    "MinLength": 0,
+    "Texture": "rbxassetid://110512569066647",
+    "TextureLength": 15,
+    "TextureMode": "Static",
+    "Transparency": [{
+        "time": 0.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.0857,
+        "value": 0.1438,
+        "envelope": 0.0
+      }, {
+        "time": 0.0985,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.3785,
+        "value": 0.6437,
+        "envelope": 0.0
+      }, {
+        "time": 0.7877,
+        "value": 0.925,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }]
+  },
+  "originalName": "Images/46dfddb40af902907c566eb4924f8855"
+}

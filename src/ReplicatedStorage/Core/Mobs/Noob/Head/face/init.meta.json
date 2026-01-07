@@ -1,0 +1,7 @@
+{
+  "className": "Decal",
+  "properties": {
+    "Tags": ["blob-get-decal-image"],
+    "TextureContent": "rbxasset://textures/face.png"
+  }
+}

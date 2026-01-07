@@ -1,0 +1,36 @@
+{
+  "className": "Trail",
+  "properties": {
+    "Brightness": 6,
+    "Color": [{
+        "time": 0.0,
+        "color": [0.4157, 0.2353, 1.0]
+      }, {
+        "time": 1.0,
+        "color": [0.4157, 0.2353, 1.0]
+      }],
+    "Lifetime": 0.6,
+    "LightEmission": 0.05,
+    "Texture": "rbxassetid://14050983225",
+    "TextureLength": 24,
+    "TextureMode": "Static",
+    "Transparency": [{
+        "time": 0.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }],
+    "WidthScale": [{
+        "time": 0.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }]
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "className": "CylinderMesh",
+  "properties": {
+    "Offset": [0, -0.4, 0.13],
+    "Scale": [0.6, 0.5, 0.6]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "className": "Frame",
+  "properties": {
+    "BackgroundColor3": [0.1647, 0.1647, 0.1647],
+    "BackgroundTransparency": 0.4,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "Position": [[0.8975, 0.0], [0.1594, 0.0]],
+    "Size": [[0.094, 0.0], [0.0852, 0.0]],
+    "Tags": ["blob-ui-object"]
+  }
+}

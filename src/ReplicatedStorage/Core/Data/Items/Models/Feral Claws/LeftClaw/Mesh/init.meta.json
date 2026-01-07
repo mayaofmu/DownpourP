@@ -1,0 +1,8 @@
+{
+  "className": "SpecialMesh",
+  "properties": {
+    "MeshId": "http://www.roblox.com/Asset?ID=105262978",
+    "MeshType": "FileMesh",
+    "Scale": [1.4326, 2.0659, 2.0659]
+  }
+}

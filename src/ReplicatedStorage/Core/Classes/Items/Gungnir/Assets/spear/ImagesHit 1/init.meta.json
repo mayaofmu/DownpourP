@@ -1,0 +1,48 @@
+{
+  "className": "ParticleEmitter",
+  "properties": {
+    "Attributes": {
+      "TimeScale_End": 1,
+      "EmitDelay": 0,
+      "EmitDuration": 0,
+      "EmitCount": 64,
+      "TimeScale_Start": 1,
+      "TimeScale_Duration": 0.0392
+    },
+    "Brightness": 12,
+    "Color": [{
+        "time": 0.0,
+        "color": [1.0, 0.4824, 0.1804]
+      }, {
+        "time": 1.0,
+        "color": [1.0, 0.4824, 0.1804]
+      }],
+    "Drag": 21,
+    "FlipbookLayout": "Grid4x4",
+    "FlipbookMode": "OneShot",
+    "Lifetime": [0.46, 0.8],
+    "LockedToPart": true,
+    "Rate": 12,
+    "RotSpeed": [1, 1],
+    "Rotation": [1, 1],
+    "ShapePartial": 8,
+    "Size": [{
+        "time": 0.0,
+        "value": 0.8427,
+        "envelope": 0.1817
+      }, {
+        "time": 0.453,
+        "value": 0.5571,
+        "envelope": 0.1556
+      }, {
+        "time": 1.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }],
+    "Speed": [1, 1],
+    "SpreadAngle": [333, 333],
+    "Texture": "rbxassetid://74960425684733",
+    "ZOffset": 2
+  },
+  "originalName": "Images/Hit 1"
+}

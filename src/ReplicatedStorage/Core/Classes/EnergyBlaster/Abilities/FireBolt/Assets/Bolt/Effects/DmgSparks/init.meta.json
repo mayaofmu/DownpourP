@@ -1,0 +1,84 @@
+{
+  "className": "ParticleEmitter",
+  "properties": {
+    "Attributes": {
+      "EmitDuration": 0,
+      "EmitCount": 12,
+      "TimeScale_End": 1,
+      "TimeScale_Duration": 0.05,
+      "TimeScale_Start": 1,
+      "EmitDelay": 0,
+      "FXTrigger": "SpawnEffect"
+    },
+    "Brightness": 12,
+    "Color": [{
+        "time": 0.0,
+        "color": [0.8157, 0.1333, 0.1333]
+      }, {
+        "time": 1.0,
+        "color": [0.8157, 0.1333, 0.1333]
+      }],
+    "Drag": 10,
+    "Enabled": false,
+    "FlipbookFramerate": [0.9903, 0.9903],
+    "Lifetime": [0.15, 0.35],
+    "LockedToPart": true,
+    "Rate": 224.5381,
+    "Shape": "Disc",
+    "ShapePartial": 6,
+    "Size": [{
+        "time": 0.0,
+        "value": 1.4995,
+        "envelope": 0.3562
+      }, {
+        "time": 0.2399,
+        "value": 0.95,
+        "envelope": 0.271
+      }, {
+        "time": 0.6359,
+        "value": 0.2119,
+        "envelope": 0.1078
+      }, {
+        "time": 1.0,
+        "value": 0.0,
+        "envelope": 0.0
+      }],
+    "Speed": [40.2882, 88.634],
+    "SpreadAngle": [333, 333],
+    "Texture": "rbxassetid://17068400400",
+    "Transparency": [{
+        "time": 0.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.0349,
+        "value": 0.6523,
+        "envelope": 0.0
+      }, {
+        "time": 0.0909,
+        "value": 0.4023,
+        "envelope": 0.0
+      }, {
+        "time": 0.1697,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.6619,
+        "value": 0.0,
+        "envelope": 0.0
+      }, {
+        "time": 0.8689,
+        "value": 0.2057,
+        "envelope": 0.0
+      }, {
+        "time": 0.9749,
+        "value": 0.7423,
+        "envelope": 0.0
+      }, {
+        "time": 1.0,
+        "value": 1.0,
+        "envelope": 0.0
+      }],
+    "ZOffset": 1
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "className": "TextButton",
+  "properties": {
+    "AnchorPoint": [0.5, 0.5],
+    "BackgroundColor3": [0.1373, 0.1373, 0.1373],
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "Position": [[0.3, 0.0], [0.5, 0.0]],
+    "RichText": true,
+    "Size": [[0.25, 0.0], [0.6, 0.0]],
+    "Tags": ["blob-ui-object"],
+    "Text": ""
+  }
+}

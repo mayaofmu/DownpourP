@@ -1,0 +1,11 @@
+{
+  "className": "Part",
+  "properties": {
+    "CFrame": [43.2894, 1.1273, 12.7591, -0.4695, -0.0, -0.8829, -0.0, 1, 0.0, 0.8829, 0.0, -0.4695],
+    "CanCollide": false,
+    "CanTouch": false,
+    "Color": [94, 140, 64],
+    "FormFactor": "Plate",
+    "Size": [1, 0.4, 1]
+  }
+}

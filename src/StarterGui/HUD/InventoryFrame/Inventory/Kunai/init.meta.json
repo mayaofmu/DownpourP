@@ -1,0 +1,15 @@
+{
+  "className": "ImageLabel",
+  "properties": {
+    "BackgroundColor3": [0.2353, 1, 0.298],
+    "BackgroundTransparency": 0.55,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "ImageContent": "rbxassetid://117141142751794",
+    "LayoutOrder": 6,
+    "Position": [[0.0, 0.0], [0.0, 0.0]],
+    "Size": [[0.05, 0.0], [0.9167, 0.0]],
+    "Tags": ["blob-ui-object"],
+    "Visible": false
+  }
+}

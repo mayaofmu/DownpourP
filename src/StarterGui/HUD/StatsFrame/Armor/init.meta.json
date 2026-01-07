@@ -1,0 +1,25 @@
+{
+  "className": "TextLabel",
+  "properties": {
+    "AnchorPoint": [0.5, 0.5],
+    "BackgroundColor3": [1, 1, 1],
+    "BackgroundTransparency": 1,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "FontFace": {
+      "family": "rbxasset://fonts/families/Nunito.json",
+      "weight": "Bold",
+      "style": "Italic",
+      "cachedFaceId": null
+    },
+    "Position": [[0.9577, 0.0], [-0.0217, 0.0]],
+    "Size": [[0.2182, 0.0], [0.0942, 0.0]],
+    "Tags": ["blob-ui-object"],
+    "Text": "Stats",
+    "TextColor3": [0.8471, 0.8745, 1],
+    "TextScaled": true,
+    "TextSize": 7,
+    "TextWrapped": true,
+    "TextXAlignment": "Right"
+  }
+}

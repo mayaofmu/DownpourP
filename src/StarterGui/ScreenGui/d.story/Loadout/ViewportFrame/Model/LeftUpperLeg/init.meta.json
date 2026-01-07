@@ -1,0 +1,12 @@
+{
+  "className": "MeshPart",
+  "properties": {
+    "CFrame": [0.5, 13.2936, 17.0942, -1, 0, 0, 0, 0.8192, -0.5736, 0, -0.5736, -0.8192],
+    "CanCollide": false,
+    "Color": [127, 127, 127],
+    "InitialSize": [1, 1.2166, 0.9999],
+    "MeshContent": "https://assetdelivery.roblox.com/v1/asset/?id=7430071065",
+    "RenderFidelity": "Precise",
+    "Size": [1, 1.2166, 0.9999]
+  }
+}

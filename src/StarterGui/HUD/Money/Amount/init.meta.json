@@ -1,0 +1,26 @@
+{
+  "className": "TextLabel",
+  "properties": {
+    "AnchorPoint": [0.5, 0.5],
+    "BackgroundColor3": [1, 1, 1],
+    "BackgroundTransparency": 1,
+    "BorderColor3": [0, 0, 0],
+    "BorderSizePixel": 0,
+    "FontFace": {
+      "family": "rbxasset://fonts/families/Jura.json",
+      "weight": "Bold",
+      "style": "Normal",
+      "cachedFaceId": null
+    },
+    "Position": [[0.55, 0.0], [0.5, 0.0]],
+    "Size": [[0.8868, 0.0], [0.7445, 0.0]],
+    "Tags": ["blob-ui-object"],
+    "Text": "$ 0",
+    "TextColor3": [0.8314, 0.8314, 0.2706],
+    "TextScaled": true,
+    "TextSize": 7,
+    "TextStrokeTransparency": 0.4,
+    "TextWrapped": true,
+    "TextXAlignment": "Left"
+  }
+}
